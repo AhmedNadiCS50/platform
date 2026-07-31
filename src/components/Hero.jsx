@@ -69,6 +69,15 @@ function QuizSimulator() {
 export default function Hero({ onOpenModal }) {
   return (
     <section className="hero-section" id="hero">
+      {/* Background Video */}
+      <video
+        className="hero-bg-video"
+        src="https://res.cloudinary.com/dy72cotx/video/upload/v1785509508/kling_20260731_Image_to_Video__5796_0_aupgwc.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
       <div className="container hero-grid">
 
         {/* Content Side */}
