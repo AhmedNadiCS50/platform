@@ -1,0 +1,952 @@
+/* ==========================================================================
+   VISION | رؤية — Responsive Optimization Layer
+   Mobile-first: 320px → 767px (mobile), 768px → 1024px (tablet), 1025px+ (desktop)
+   ========================================================================== */
+
+/* ─── 0. Global Foundation ────────────────────────────────────────────────── */
+
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  min-width: 0;
+}
+
+*, *::before, *::after {
+  min-width: 0; /* Prevents flex/grid children from overflowing */
+}
+
+/* Container responsive padding */
+.container {
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+
+/* Touch-target compliance for interactive elements */
+.btn-primary,
+.btn-secondary,
+.dash-nav-link,
+.settings-tab-btn,
+.lesson-tab,
+.quiz-action-btn,
+.filter-chip-btn {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Prevent images from breaking layout */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ─── 1. Landing Page — Navbar ────────────────────────────────────────────── */
+
+/* Mobile nav backdrop (for when menu is open) */
+.nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 6, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 98;
+}
+
+.nav-backdrop.active {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  /* Ensure nav links wrap correctly in mobile drawer */
+  .nav-menu {
+    padding: 2rem 1.5rem;
+    align-items: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .nav-link {
+    font-size: 1.15rem;
+    padding: 0.6rem 0;
+    width: 100%;
+    display: block;
+  }
+
+  .nav-cta-buttons {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .nav-cta-buttons .btn-primary,
+  .nav-cta-buttons .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-navbar {
+    padding: 1rem 0;
+  }
+
+  .header-navbar.scrolled {
+    padding: 0.65rem 0;
+  }
+
+  .logo-emblem {
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand-name-en {
+    font-size: 1.1rem;
+  }
+}
+
+/* ─── 2. Landing Page — Hero Section ─────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .hero-section {
+    padding-top: 8rem;
+    padding-bottom: 4rem;
+  }
+
+  /* Stack hero grid vertically on tablet */
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .hero-visual { order: -1; } /* Card on top on mobile */
+
+  .glass-card-hero {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-section {
+    padding-top: 6.5rem;
+    padding-bottom: 3rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2.2rem, 8vw, 3.5rem);
+    line-height: 1.25;
+    margin-bottom: 1.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    margin-bottom: 2rem;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .hero-cta-group .btn-primary,
+  .hero-cta-group .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-badge {
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem;
+  }
+
+  .glass-card-hero {
+    padding: 1.6rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .hero-stats-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    padding: 0.9rem;
+  }
+
+  .stat-number {
+    font-size: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: clamp(1.9rem, 7.5vw, 2.5rem);
+  }
+
+  .hero-stats-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .hero-stats-row > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    text-align: start;
+  }
+
+  .stat-number { font-size: 1.4rem; }
+}
+
+/* ─── 3. Features / Section Grids ────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+
+  .section-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-description {
+    font-size: 1rem;
+  }
+
+  .section-tag {
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+  }
+}
+
+/* Study Calculator */
+@media (max-width: 1024px) {
+  .calc-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .calculator-box {
+    padding: 2.5rem 2rem;
+    margin-bottom: 4rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .calculator-box {
+    padding: 1.8rem 1.2rem;
+    margin-bottom: 3rem;
+  }
+  .calc-score { font-size: 2.5rem; }
+  .calc-result-card { padding: 1.5rem; }
+}
+
+/* Opening Section */
+@media (max-width: 767px) {
+  .opening-section { padding: 5rem 0; }
+  .opening-body-text { font-size: 1rem; }
+  .opening-quote { font-size: 1.1rem; }
+  .opening-card { padding: 2rem 1.4rem; }
+}
+
+/* Foundation / Pillar / Experience Sections */
+@media (max-width: 767px) {
+  .foundation-section,
+  .experience-section,
+  .why-section,
+  .core-section { padding: 5rem 0; }
+
+  .foundation-banner { padding: 2rem 1.2rem; }
+  .pillar-card { padding: 2rem 1.4rem; }
+  .faq-question { padding: 1.2rem 1.4rem; font-size: 1rem; }
+  .faq-answer { padding: 0 1.4rem 1.2rem; font-size: 0.97rem; }
+}
+
+/* CTA Section */
+@media (max-width: 767px) {
+  .cta-section { padding: 4rem 0; }
+  .cta-box { padding: 3rem 1.2rem; }
+  .cta-desc { font-size: 1rem; margin-bottom: 2rem; }
+  .cta-buttons { flex-direction: column; align-items: stretch; gap: 0.9rem; }
+  .cta-buttons .btn-primary,
+  .cta-buttons .btn-secondary { width: 100%; justify-content: center; }
+}
+
+/* ─── 4. Footer ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .footer-section { padding: 3.5rem 0 2rem; }
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .footer-brand-desc { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .footer-section { padding: 2.5rem 0 1.5rem; }
+  .footer-heading { font-size: 1rem; }
+}
+
+/* ─── 5. Auth Pages: Login / Register / Forgot Password ─────────────────── */
+
+@media (max-width: 480px) {
+  .login-page,
+  .onboard-page {
+    padding: 1.5rem 0.8rem;
+  }
+
+  .login-card {
+    padding: 1.8rem 1.2rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .login-title { font-size: 1.6rem; }
+  .login-desc { font-size: 0.95rem; }
+
+  .login-submit-btn {
+    padding: 0.9rem;
+    font-size: 1rem;
+  }
+
+  .fp-success-title { font-size: 1.4rem; }
+  .fp-success-desc { font-size: 0.92rem; }
+}
+
+/* ─── 6. Onboarding: Grade / Path / Spec Selection ───────────────────────── */
+
+@media (max-width: 767px) {
+  .onboard-wrapper { gap: 1.8rem; }
+  .onboard-desc { font-size: 0.98rem; }
+
+  /* Step indicator — make smaller on mobile */
+  .onboard-steps { flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
+  .onboard-step { font-size: 0.82rem; }
+  .onboard-step-line { width: 28px; }
+
+  /* Grade/Path/Spec cards — ensure 1 col on narrow mobile */
+  .grade-cards-grid,
+  .path-cards-grid,
+  .spec-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .grade-card,
+  .path-card,
+  .spec-card {
+    padding: 1.8rem 1.2rem;
+    text-align: center;
+    align-items: center;
+  }
+
+  .grade-continue-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+  .grade-cards-grid { grid-template-columns: repeat(2, 1fr); }
+  .path-cards-grid  { grid-template-columns: repeat(2, 1fr); }
+  .spec-cards-grid  { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── 7. Dashboard Layout ─────────────────────────────────────────────────── */
+
+@media (max-width: 868px) {
+  .dash-search-wrap {
+    display: none; /* Hide search in header; accessible via another route or modal */
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-header {
+    padding: 0 0.8rem;
+    height: 64px;
+  }
+
+  .dash-content-body {
+    padding: 1rem;
+  }
+
+  .dash-icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .dash-profile-chip {
+    padding: 0.3rem 0.6rem;
+  }
+}
+
+/* ─── 8. Dashboard Overview Page ─────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dash-grid-top,
+  .dash-grid-mid,
+  .dash-grid-bottom {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .dash-home-welcome {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem 1.2rem;
+  }
+
+  .dash-welcome-text h2 {
+    font-size: 1.45rem;
+  }
+
+  .dash-welcome-text p {
+    font-size: 0.93rem;
+  }
+
+  .dash-streak-pill { display: none; }
+
+  .dash-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .dash-stats-items-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .dash-stats-grid { grid-template-columns: 1fr; }
+  .dash-stat-card { padding: 1.2rem; }
+  .dash-stat-val { font-size: 1.35rem; }
+}
+
+/* Schedule rows on tiny screens */
+@media (max-width: 480px) {
+  .schedule-row {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .sched-day-col {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .sched-subj-name {
+    font-size: 0.82rem;
+  }
+
+  .sched-time-col {
+    font-size: 0.75rem;
+  }
+}
+
+/* Subject bars inside progress card */
+@media (max-width: 480px) {
+  .dash-progress-main {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .dash-circle-gauge {
+    margin: 0 auto;
+  }
+
+  .subj-info {
+    font-size: 0.78rem;
+  }
+}
+
+/* ─── 9. Subjects Page ────────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .subjects-page-container { gap: 1.5rem; }
+
+  .subjects-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+  }
+
+  .subjects-search-box {
+    width: 100%;
+  }
+
+  .path-chip-badge {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.9rem;
+  }
+
+  .subjects-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1100px) {
+  .subjects-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Subject Details Banner */
+@media (max-width: 767px) {
+  .subject-banner-card {
+    padding: 1.8rem 1.4rem;
+  }
+
+  .banner-title {
+    font-size: 1.6rem;
+  }
+
+  .banner-desc {
+    font-size: 0.97rem;
+  }
+
+  .banner-stats-row {
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .lesson-row {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.85rem;
+  }
+
+  .lesson-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .lesson-start-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ─── 10. Dashboard Overview — Welcome Banner (DashboardOverview) ─────────── */
+
+@media (max-width: 480px) {
+  .dash-home-welcome,
+  .dash-welcome-banner {
+    padding: 1.4rem 1rem;
+  }
+
+  .dash-welcome-chips { gap: 0.4rem; }
+  .dash-chip-item { font-size: 0.78rem; padding: 0.25rem 0.75rem; }
+}
+
+/* ─── 11. Lesson Page Additional Responsive ───────────────────────────────── */
+
+@media (max-width: 480px) {
+  .lesson-breadcrumb {
+    font-size: 0.8rem;
+  }
+
+  .breadcrumb-current {
+    max-width: 160px;
+    font-size: 0.8rem;
+  }
+
+  .lesson-title {
+    font-size: 1.15rem;
+  }
+
+  .sidebar-toggle-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .lesson-meta-chip {
+    font-size: 0.75rem;
+    padding: 0.22rem 0.6rem;
+  }
+
+  .lesson-play-ring {
+    width: 60px;
+    height: 60px;
+  }
+
+  .lesson-nav-btn { padding: 0.65rem 0.9rem; font-size: 0.85rem; }
+  .nav-btn-title { max-width: 120px; font-size: 0.8rem; }
+
+  /* Comments */
+  .comment-compose { gap: 0.7rem; }
+  .comment-avatar { width: 34px; height: 34px; font-size: 0.8rem; }
+}
+
+/* Lesson sidebar overlay on very small screens */
+@media (max-width: 380px) {
+  .lesson-sidebar {
+    width: 100% !important;
+  }
+}
+
+/* ─── 12. Quiz Page Additional Responsive ─────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .quiz-header {
+    height: auto;
+    padding: 0.65rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .quiz-header-left {
+    gap: 0.7rem;
+  }
+
+  .quiz-header-title {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+
+  .quiz-header-center {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    padding-bottom: 0.3rem;
+  }
+
+  .quiz-timer-badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.85rem;
+  }
+
+  .quiz-back-btn {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .btn-finish-quiz {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.82rem;
+  }
+
+  .quiz-main-body {
+    padding: 1rem;
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+
+  .quiz-question-card { padding: 1.4rem 1.2rem; }
+  .question-title-text { font-size: 1.1rem; }
+
+  .mcq-option-card {
+    padding: 0.9rem 1rem;
+    gap: 0.9rem;
+  }
+
+  .mcq-option-key {
+    width: 30px;
+    height: 30px;
+    font-size: 0.82rem;
+  }
+
+  .mcq-option-text { font-size: 0.95rem; }
+
+  .quiz-nav-footer {
+    flex-wrap: wrap;
+    gap: 0.7rem;
+  }
+
+  .quiz-action-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* Results */
+  .results-container { padding: 1.5rem 1rem; gap: 1.4rem; }
+  .results-score-card { padding: 2rem 1.2rem; }
+  .results-score-number { font-size: 2.8rem; }
+  .results-status-title { font-size: 1.3rem; }
+  .results-status-subtitle { font-size: 0.9rem; }
+
+  .results-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+  }
+
+  .results-analysis-section { padding: 1.4rem; }
+  .answer-review-card { padding: 1.4rem; }
+  .results-action-buttons { flex-direction: column; align-items: stretch; }
+  .results-action-buttons .btn-primary,
+  .results-action-buttons .btn-secondary { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 400px) {
+  .results-metrics-grid { grid-template-columns: 1fr; }
+  .quiz-header-title { max-width: 110px; }
+}
+
+/* ─── 13. Profile Page Additional Responsive ──────────────────────────────── */
+
+@media (max-width: 480px) {
+  .profile-hero-card {
+    padding: 1.5rem 1rem;
+    gap: 1.2rem;
+  }
+
+  .profile-user-name { font-size: 1.35rem; }
+  .profile-user-email { font-size: 0.88rem; }
+
+  .profile-avatar-wrap {
+    width: 78px;
+    height: 78px;
+  }
+
+  .profile-avatar-inner { font-size: 1.8rem; }
+
+  .profile-academic-grid {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .academic-info-card { padding: 0.9rem 1rem; }
+
+  .profile-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.9rem;
+  }
+
+  .profile-stat-card {
+    padding: 1.1rem;
+    gap: 0.85rem;
+  }
+
+  .stat-val-num { font-size: 1.3rem; }
+
+  .achievements-grid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .profile-section-card { padding: 1.4rem; }
+
+  .settings-shortcut-grid { grid-template-columns: 1fr; gap: 0.9rem; }
+  .settings-shortcut-card { padding: 1.1rem 1.2rem; }
+}
+
+/* ─── 14. Settings Page Additional Responsive ─────────────────────────────── */
+
+@media (max-width: 767px) {
+  .settings-header-card {
+    padding: 1.5rem 1.2rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .btn-save-settings { width: 100%; justify-content: center; }
+
+  .settings-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+
+  /* Horizontal scrolling tab nav */
+  .settings-nav-card {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0.6rem 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .settings-nav-card::-webkit-scrollbar { display: none; }
+
+  .settings-tab-btn {
+    white-space: nowrap;
+    width: auto;
+    flex-shrink: 0;
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+  }
+
+  .settings-tab-btn.active {
+    border-right: none;
+    border-bottom: 2px solid var(--green-neon);
+  }
+
+  .settings-content-card { padding: 1.4rem; }
+
+  .settings-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .theme-colors-grid { grid-template-columns: repeat(2, 1fr); }
+  .lang-cards-grid { grid-template-columns: 1fr; }
+
+  .device-item-card {
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    padding: 0.9rem;
+  }
+
+  .btn-revoke-device { margin-right: auto; }
+}
+
+@media (max-width: 400px) {
+  .theme-colors-grid { grid-template-columns: repeat(2, 1fr); }
+  .settings-toggle-item { padding: 0.9rem 1rem; gap: 1rem; }
+  .toggle-title { font-size: 0.9rem; }
+}
+
+/* Toast positioning on mobile */
+@media (max-width: 600px) {
+  .settings-saved-toast {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* ─── 15. Utility Overrides for Overflow Prevention ──────────────────────── */
+
+@media (max-width: 767px) {
+  /* Keep text from breaking out of cards on narrow screens */
+  .dash-lesson-title,
+  .dash-exam-title,
+  .banner-title,
+  .unit-title,
+  .lesson-name,
+  .subject-name {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Subject details lesson rows */
+  .lesson-row { flex-wrap: wrap; }
+  .lesson-left { flex: 1; }
+
+  /* Stat box text scaling */
+  .stat-box-val { font-size: 1rem; }
+  .stat-box-lbl { font-size: 0.73rem; }
+}
+
+/* ─── 16. Ambient Lights — Don't overflow on mobile ─────────────────────── */
+
+@media (max-width: 767px) {
+  .mesh-bg-light-1 {
+    width: 350px;
+    height: 350px;
+    top: -5%;
+    right: -5%;
+  }
+
+  .mesh-bg-light-2 {
+    width: 280px;
+    height: 280px;
+    bottom: 5%;
+    left: -5%;
+  }
+}
+
+/* ─── 17. Quiz page sidebar palette on mobile ─────────────────────────────── */
+
+@media (max-width: 767px) {
+  .quiz-sidebar {
+    position: static;
+  }
+
+  .questions-grid-palette {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .palette-btn { font-size: 0.82rem; }
+}
+
+@media (max-width: 480px) {
+  .questions-grid-palette {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+  }
+}
+
+/* ─── 18. Lesson nav buttons on small screens ─────────────────────────────── */
+
+@media (max-width: 480px) {
+  .lesson-nav-row {
+    flex-wrap: wrap;
+    gap: 0.7rem;
+  }
+
+  .lesson-nav-btn {
+    flex: 1 1 calc(50% - 0.35rem);
+    max-width: 100%;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .lesson-nav-progress {
+    order: -1;
+    flex: 0 0 100%;
+    align-items: center;
+  }
+
+  .nav-btn-title { max-width: 100px; }
+}
+
+/* ─── 19. Dashboard sidebar — ensure no overflow on very small screens ─────── */
+
+@media (max-width: 320px) {
+  .dash-sidebar { width: 260px; }
+  .dash-content-body { padding: 0.8rem; }
+  .lesson-page { gap: 1rem; }
+}
+
+/* ─── 20. Tablet fine-tuning (768–1024px) ─────────────────────────────────── */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .dash-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-grid-top,
+  .dash-grid-mid,
+  .dash-grid-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .subjects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .profile-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .settings-layout-grid {
+    grid-template-columns: 240px 1fr;
+  }
+
+  .quiz-main-body {
+    grid-template-columns: 1fr 280px;
+  }
+
+  .lesson-layout.sidebar-open { grid-template-columns: 1fr 300px; }
+}
