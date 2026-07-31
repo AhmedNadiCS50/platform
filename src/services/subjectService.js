@@ -27,6 +27,13 @@ const LESSONS_COLLECTION  = 'lessons';
  * @returns {Promise<object[]>}
  */
 export async function getSubjectsByGradeAndTrack(grade, track) {
+  // Ensure initial subjects exist in Firestore
+  try {
+    await seedInitialSubjects();
+  } catch (err) {
+    console.warn('[subjectService] Auto-seed check skipped/failed:', err);
+  }
+
   const queries = [];
 
   // Q1: Common subjects for this grade
