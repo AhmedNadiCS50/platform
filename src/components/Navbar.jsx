@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import LogoSvg from './LogoSvg';
 import { ArrowLeft, Menu, X } from 'lucide-react';
 
@@ -70,10 +71,15 @@ export default function Navbar({ onOpenModal }) {
               </li>
             ))}
             <li>
-              <button className="btn-primary" onClick={() => { setMobileOpen(false); onOpenModal(); }}>
+              <Link
+                to="/register"
+                className="btn-primary"
+                onClick={() => setMobileOpen(false)}
+                style={{ textDecoration: 'none' }}
+              >
                 <span>ابدأ مجانًا</span>
                 <ArrowLeft size={18} />
-              </button>
+              </Link>
             </li>
           </ul>
         </nav>

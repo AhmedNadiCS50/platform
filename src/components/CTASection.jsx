@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Zap, ArrowLeft } from 'lucide-react';
 
 export default function CTASection({ onOpenModal }) {
@@ -17,14 +18,14 @@ export default function CTASection({ onOpenModal }) {
             سجّل اسمك الآن وكن من أوائل طلاب البكالوريا المصرية الذين يستمتعون بتجربة تعليمية لا مثيل لها.
           </p>
           <div className="cta-buttons">
-            <button className="btn-primary" onClick={onOpenModal} style={{ fontSize: '1.2rem', padding: '1.2rem 3rem' }}>
+            <Link to="/register" className="btn-primary" style={{ fontSize: '1.2rem', padding: '1.2rem 3rem', textDecoration: 'none' }}>
               <span>سجّل مجاناً الآن</span>
               <Zap size={22} />
-            </button>
-            <button className="btn-secondary" onClick={onOpenModal} style={{ fontSize: '1.1rem', padding: '1.1rem 2.5rem' }}>
+            </Link>
+            <a href="#pathways" className="btn-secondary" style={{ fontSize: '1.1rem', padding: '1.1rem 2.5rem', textDecoration: 'none' }}>
               <span>استكشف المسارات</span>
               <ArrowLeft size={20} />
-            </button>
+            </a>
           </div>
         </div>
       </div>

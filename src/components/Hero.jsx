@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Lightbulb, Zap, GraduationCap, Dna, Compass, LineChart, Palette, CheckCircle } from 'lucide-react';
 
 const QUIZ_DATA = {
@@ -96,14 +97,14 @@ export default function Hero({ onOpenModal }) {
           </p>
 
           <div className="hero-cta-group">
-            <button className="btn-primary" onClick={onOpenModal}>
+            <Link to="/register" className="btn-primary" style={{ textDecoration: 'none' }}>
               <span>ابدأ مجانًا</span>
               <Zap size={18} />
-            </button>
-            <button className="btn-secondary" onClick={onOpenModal}>
+            </Link>
+            <Link to="/login" className="btn-secondary" style={{ textDecoration: 'none' }}>
               <span>ادخل إلى المنصة</span>
               <GraduationCap size={18} />
-            </button>
+            </Link>
           </div>
         </div>
 

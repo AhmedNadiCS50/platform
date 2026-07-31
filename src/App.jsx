@@ -20,6 +20,10 @@ import ForgotPassword from './pages/ForgotPassword';
 import SelectGrade from './pages/SelectGrade';
 import SelectPath from './pages/SelectPath';
 import SelectSpecialization from './pages/SelectSpecialization';
+import DashboardLayout from './layouts/DashboardLayout';
+import DashboardOverview from './pages/dashboard/DashboardOverview';
+import SubjectsPage from './pages/dashboard/SubjectsPage';
+import SubjectDetails from './pages/dashboard/SubjectDetails';
 
 function HomePage({ onOpenModal }) {
   return (
@@ -50,6 +54,19 @@ function HomePage({ onOpenModal }) {
   );
 }
 
+function PlaceholderPage({ title }) {
+  return (
+    <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+      <h1 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '0.8rem', fontFamily: 'var(--font-heading-ar)' }}>
+        {title}
+      </h1>
+      <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body-ar)' }}>
+        صفحة {title} قيد التطوير وستستعين بهذه البنية المرنة.
+      </p>
+    </div>
+  );
+}
+
 export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -74,6 +91,18 @@ export default function App() {
         <Route path="/select-grade" element={<SelectGrade />} />
         <Route path="/select-path" element={<SelectPath />} />
         <Route path="/select-specialization" element={<SelectSpecialization />} />
+
+        {/* Dashboard Layout with Nested Routes */}
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<DashboardOverview />} />
+          <Route path="subjects" element={<SubjectsPage />} />
+          <Route path="subjects/:id" element={<SubjectDetails />} />
+          <Route path="exams" element={<PlaceholderPage title="الاختبارات" />} />
+          <Route path="progress" element={<PlaceholderPage title="التقدم" />} />
+          <Route path="achievements" element={<PlaceholderPage title="الإنجازات" />} />
+          <Route path="profile" element={<PlaceholderPage title="الملف الشخصي" />} />
+          <Route path="settings" element={<PlaceholderPage title="الإعدادات" />} />
+        </Route>
       </Routes>
 
       <ModalPortal

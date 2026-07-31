@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import LogoSvg from './LogoSvg';
 import { Mail, MessageCircle } from 'lucide-react';
 
@@ -37,9 +38,9 @@ export default function Footer({ onOpenModal }) {
             </p>
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button className="btn-primary" onClick={onOpenModal} style={{ padding: '0.7rem 1.4rem', fontSize: '0.92rem' }}>
+              <Link to="/register" className="btn-primary" style={{ padding: '0.7rem 1.4rem', fontSize: '0.92rem', textDecoration: 'none' }}>
                 ابدأ مجانًا
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -61,9 +62,9 @@ export default function Footer({ onOpenModal }) {
                 <li key={i}><a href={l.href}>{l.label}</a></li>
               ))}
               <li>
-                <a href="#hero" onClick={e => { e.preventDefault(); onOpenModal(); }}>
+                <Link to="/login" style={{ textDecoration: 'none' }}>
                   تسجيل دخول الطلاب
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
