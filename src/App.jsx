@@ -59,19 +59,6 @@ function HomePage({ onOpenModal }) {
   );
 }
 
-function PlaceholderPage({ title }) {
-  return (
-    <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-      <h1 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '0.8rem', fontFamily: 'var(--font-heading-ar)' }}>
-        {title}
-      </h1>
-      <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body-ar)' }}>
-        صفحة {title} قيد التطوير وستستعين بهذه البنية المرنة.
-      </p>
-    </div>
-  );
-}
-
 export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -95,14 +82,15 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Protected Routes — Require Authentication */}
-        <Route element={<ProtectedRoute />}>
-          {/* Onboarding Routes */}
+        {/* Onboarding Routes — Require Auth, but allow incomplete onboarding */}
+        <Route element={<ProtectedRoute allowIncompleteOnboarding={true} />}>
           <Route path="/select-grade" element={<SelectGrade />} />
           <Route path="/select-path" element={<SelectPath />} />
           <Route path="/select-specialization" element={<SelectSpecialization />} />
+        </Route>
 
-          {/* Standalone Protected Pages */}
+        {/* Fully Protected Dashboard Routes — Require Auth AND Completed Onboarding */}
+        <Route element={<ProtectedRoute allowIncompleteOnboarding={false} />}>
           <Route path="/quiz/:id" element={<QuizPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
@@ -115,8 +103,8 @@ export default function App() {
             <Route path="lesson/:id" element={<LessonPage />} />
             <Route path="quiz/:id" element={<QuizPage />} />
             <Route path="exams" element={<QuizPage />} />
-            <Route path="progress" element={<PlaceholderPage title="التقدم" />} />
-            <Route path="achievements" element={<PlaceholderPage title="الإنجازات" />} />
+            <Route path="progress" element={<DashboardOverview />} />
+            <Route path="achievements" element={<ProfilePage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

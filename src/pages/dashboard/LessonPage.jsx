@@ -1,12 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useUserSession } from '../../context/UserSessionContext';
+import { getLessonById, getLessonComments, addLessonComment, toggleLessonCompletion, saveLastOpenedLesson } from '../../services/contentService';
 import './LessonPage.css';
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
-  Download, ChevronRight, ChevronLeft, MessageCircle,
-  Send, CheckCircle, Lock, Clock, FileText, ClipboardList,
-  BookOpen, ChevronDown, ChevronUp, ThumbsUp, MoreHorizontal,
-  ArrowRight, Star, Award, AlertCircle, X, Loader2
+  Download, ChevronLeft, MessageCircle, CheckCircle, Clock, FileText, ClipboardList,
+  BookOpen, Star, Award, Loader2
 } from 'lucide-react';
 
 /* ─── Sample Data ─────────────────────────────────────────────── */
@@ -15,9 +15,9 @@ const SAMPLE_UNITS = [
     id: 'u1',
     unitTitle: 'الوحدة الأولى: الأساسيات والمفاهيم الجوهرية',
     lessons: [
-      { id: '1', title: 'المقدمة العامة والمبادئ الرئيسية', duration: '25 دقيقة', completed: true },
-      { id: '2', title: 'التفاعلات والتحليلات التطبيقية', duration: '35 دقيقة', completed: true },
-      { id: '3', title: 'التطبيقات العملية وحل المسائل', duration: '40 دقيقة', completed: false, current: true },
+      { id: '1', title: 'المقدمة العامة والمبادئ الرئيسية للحياة', duration: '25 دقيقة', completed: true },
+      { id: '2', title: 'التفاعلات والتحليلات التطبيقية للـ DNA', duration: '35 دقيقة', completed: true },
+      { id: '3', title: 'التطبيقات العملية وحل المسائل البيوكيميائية', duration: '40 دقيقة', completed: false, current: true },
     ],
   },
   {
@@ -29,65 +29,9 @@ const SAMPLE_UNITS = [
       { id: '6', title: 'الاختبار النصف سنوي للمادة', duration: '60 دقيقة', locked: true },
     ],
   },
-  {
-    id: 'u3',
-    unitTitle: 'الوحدة الثالثة: التحليل المتقدم والبحث العلمي',
-    lessons: [
-      { id: '7', title: 'منهجية البحث العلمي والتجريب', duration: '38 دقيقة', locked: true },
-      { id: '8', title: 'تحليل النتائج وقراءة البيانات', duration: '50 دقيقة', locked: true },
-    ],
-  },
 ];
 
 const LESSONS_FLAT = SAMPLE_UNITS.flatMap((u) => u.lessons);
-
-const SAMPLE_COMMENTS = [
-  {
-    id: 1,
-    author: 'سارة أحمد',
-    initials: 'سأ',
-    role: 'طالبة',
-    time: 'منذ ساعتين',
-    text: 'شرح ممتاز جداً! المفاهيم واضحة ومرتبة بشكل منطقي. شكراً للمدرس على هذا المجهود الرائع.',
-    likes: 14,
-    liked: false,
-    color: '#c084fc',
-  },
-  {
-    id: 2,
-    author: 'محمود علي',
-    initials: 'مع',
-    role: 'طالب',
-    time: 'منذ 5 ساعات',
-    text: 'هل يمكن شرح مثال إضافي على التفاعلات في الدقيقة 18؟ لم أفهمها جيداً.',
-    likes: 7,
-    liked: false,
-    color: '#38bdf8',
-  },
-  {
-    id: 3,
-    author: 'نورا حسين',
-    initials: 'نح',
-    role: 'طالبة',
-    time: 'منذ يوم',
-    text: 'المادة مرتبة جداً والفيديو عالي الجودة. أتمنى لو كانت هناك ملاحظات تفصيلية أكثر في الـ PDF.',
-    likes: 22,
-    liked: true,
-    color: '#fbbf24',
-  },
-];
-
-const HOMEWORK = {
-  title: 'واجب الدرس الثالث',
-  description:
-    'قم بحل التمارين من 1 إلى 10 في الكتاب المدرسي، صفحة 47، ثم أجب عن الأسئلة التالية بأسلوبك الخاص مستعيناً بما شرحناه في الدرس.',
-  questions: [
-    'وضّح الفرق بين التفاعل الكيميائي المتجه وغير المتجه مع مثال عملي.',
-    'أكتب معادلة حسابية لإيجاد معدل التغيير في النظام المغلق.',
-    'كيف تؤثر درجة الحرارة على سرعة التفاعل؟ ناقش بالتفصيل.',
-  ],
-  dueDate: 'الجمعة 2 أغسطس 2026',
-};
 
 /* ─── Video Player Component ──────────────────────────────────── */
 function VideoPlayer({ lessonTitle }) {
@@ -99,54 +43,44 @@ function VideoPlayer({ lessonTitle }) {
   const playerRef = useRef(null);
   const controlsTimeout = useRef(null);
 
-  const handleMouseMove = () => {
-    setShowControls(true);
-    clearTimeout(controlsTimeout.current);
-    if (playing) {
-      controlsTimeout.current = setTimeout(() => setShowControls(false), 2500);
-    }
-  };
-
   const handlePlayPause = () => {
     setPlaying((p) => !p);
-    setShowControls(true);
-    clearTimeout(controlsTimeout.current);
-    if (!playing) {
-      controlsTimeout.current = setTimeout(() => setShowControls(false), 2500);
-    }
   };
 
   const handleProgressClick = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const pct = (x / rect.width) * 100;
-    setProgress(Math.max(0, Math.min(100, pct)));
+    const pos = (e.clientX - rect.left) / rect.width;
+    setProgress(Math.max(0, Math.min(100, pos * 100)));
   };
 
   const toggleFullscreen = () => {
-    if (!fullscreen) {
-      playerRef.current?.requestFullscreen?.();
+    if (!playerRef.current) return;
+    if (!document.fullscreenElement) {
+      playerRef.current.requestFullscreen().catch((err) => console.log(err));
+      setFullscreen(true);
     } else {
-      document.exitFullscreen?.();
+      document.exitFullscreen().catch((err) => console.log(err));
+      setFullscreen(false);
     }
-    setFullscreen((f) => !f);
   };
 
-  const totalTime = '40:00';
-  const currentTime = `${Math.floor((progress / 100) * 40)
-    .toString()
-    .padStart(2, '0')}:${Math.floor(((progress / 100) * 40 * 60) % 60)
-    .toString()
-    .padStart(2, '0')}`;
+  const currentTime = `${Math.floor((progress * 18) / 100)}:${String(
+    Math.floor(((progress * 18 * 60) / 100) % 60)
+  ).padStart(2, '0')}`;
+  const totalTime = '18:00';
 
   return (
     <div
       ref={playerRef}
-      className="lesson-player"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => playing && setShowControls(false)}
+      className="lesson-video-container"
+      onMouseMove={() => {
+        setShowControls(true);
+        if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
+        controlsTimeout.current = setTimeout(() => setShowControls(false), 3000);
+      }}
+      onMouseLeave={() => setShowControls(false)}
     >
-      <div className="lesson-player-bg">
+      <div className="lesson-player-placeholder">
         <div className="lesson-player-gradient" />
         <div className="lesson-player-scanlines" />
       </div>
@@ -164,7 +98,6 @@ function VideoPlayer({ lessonTitle }) {
 
       <div className={`lesson-player-controls ${showControls ? 'visible' : ''}`}>
         <div className="lesson-progress-track" onClick={handleProgressClick}>
-          <div className="lesson-progress-buffer" style={{ width: `${Math.min(progress + 15, 100)}%` }} />
           <div className="lesson-progress-fill" style={{ width: `${progress}%` }}>
             <div className="lesson-progress-thumb" />
           </div>
@@ -212,30 +145,15 @@ function VideoPlayer({ lessonTitle }) {
 function Comment({ comment, onLike }) {
   return (
     <div className="lesson-comment-item">
-      <div className="comment-avatar" style={{ background: `${comment.color}22`, border: `1.5px solid ${comment.color}55` }}>
-        <span style={{ color: comment.color }}>{comment.initials}</span>
+      <div className="comment-avatar" style={{ background: `${comment.color || '#00e676'}22`, border: `1.5px solid ${comment.color || '#00e676'}55` }}>
+        <span style={{ color: comment.color || '#00e676' }}>{comment.initials}</span>
       </div>
       <div className="comment-body">
         <div className="comment-header">
           <span className="comment-author">{comment.author}</span>
           <span className="comment-role">{comment.role}</span>
-          <span className="comment-time">{comment.time}</span>
         </div>
         <p className="comment-text">{comment.text}</p>
-        <div className="comment-actions">
-          <button
-            type="button"
-            className={`comment-like-btn ${comment.liked ? 'liked' : ''}`}
-            onClick={() => onLike(comment.id)}
-          >
-            <ThumbsUp size={14} />
-            <span>{comment.likes + (comment.liked ? 1 : 0)}</span>
-          </button>
-          <button type="button" className="comment-reply-btn">
-            <MessageCircle size={14} />
-            <span>رد</span>
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -245,19 +163,37 @@ function Comment({ comment, onLike }) {
 export default function LessonPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const currentIdx = LESSONS_FLAT.findIndex((l) => l.id === id);
-  const lesson = currentIdx >= 0 ? LESSONS_FLAT[currentIdx] : LESSONS_FLAT[2];
-  const prevLesson = currentIdx > 0 ? LESSONS_FLAT[currentIdx - 1] : null;
-  const nextLesson = currentIdx < LESSONS_FLAT.length - 1 ? LESSONS_FLAT[currentIdx + 1] : null;
+  const { currentUser, userProfile } = useUserSession();
 
   const [activeTab, setActiveTab] = useState('desc');
   const [collapsedUnits, setCollapsedUnits] = useState({});
-  const [comments, setComments] = useState(SAMPLE_COMMENTS);
   const [commentText, setCommentText] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      setLoading(true);
+      const [lesData, comData] = await Promise.all([
+        getLessonById(id),
+        getLessonComments(id),
+      ]);
+      if (isMounted) {
+        setLesson(lesData);
+        setComments(comData);
+        setLoading(false);
+
+        if (lesData && currentUser?.uid) {
+          saveLastOpenedLesson(currentUser.uid, lesData);
+        }
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [id, currentUser?.uid]);
 
   const toggleUnit = (unitId) =>
     setCollapsedUnits((prev) => ({ ...prev, [unitId]: !prev[unitId] }));
@@ -300,13 +236,20 @@ export default function LessonPage() {
     navigate(`/dashboard/lesson/${lessonId}`);
   };
 
+  if (loading || !lesson) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem', color: 'var(--green-neon)', gap: '0.8rem', alignItems: 'center' }}>
+        <Loader2 size={26} className="spin-icon" />
+        <span>جاري تحميل تفاصيل الدرس والتعليقات من Firestore...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="lesson-page">
       {/* Breadcrumb */}
       <nav className="lesson-breadcrumb" aria-label="breadcrumb">
         <Link to="/dashboard/subjects" className="breadcrumb-link">المواد</Link>
-        <ChevronLeft size={14} className="breadcrumb-sep" />
-        <Link to="/dashboard/subjects/biology" className="breadcrumb-link">الأحياء والوراثة</Link>
         <ChevronLeft size={14} className="breadcrumb-sep" />
         <span className="breadcrumb-current">{lesson.title}</span>
       </nav>

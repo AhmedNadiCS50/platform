@@ -1,38 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUserSession } from '../../context/UserSessionContext';
-import { PATH_SUBJECTS_CONFIG } from '../../config/subjects';
-import { ArrowRight, Play, CheckCircle, Clock, FileText, Lock } from 'lucide-react';
+import { getSubjectById, getSubjectLessons } from '../../services/contentService';
+import { ArrowRight, Play, CheckCircle, Clock, BookOpen, Lock, Loader2 } from 'lucide-react';
 
 export default function SubjectDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { selectedPath } = useUserSession();
+  const { userProfile, selectedPath } = useUserSession();
 
-  const activePathKey = selectedPath || 'medicine';
-  const subjectsList = PATH_SUBJECTS_CONFIG[activePathKey] || PATH_SUBJECTS_CONFIG.medicine;
+  const [subject, setSubject] = useState(null);
+  const [lessons, setLessons]   = useState([]);
+  const [loading, setLoading]   = useState(true);
 
-  const subject = subjectsList.find((s) => s.id === id) || subjectsList[0];
+  const activePathKey = userProfile?.path || selectedPath || 'medicine';
 
-  const Icon = subject.icon;
-
-  const SAMPLE_UNITS = [
-    {
-      unitTitle: 'الوحدة الأولى: الأساسيات والمفاهيم الجوهرية',
-      lessons: [
-        { id: 1, title: 'المقدمة العامة والمبادئ الرئيسية', duration: '25 دقيقة', completed: true },
-        { id: 2, title: 'التفاعلات والتحليلات التطبيقية', duration: '35 دقيقة', completed: true },
-        { id: 3, title: 'التطبيقات العملية وحل المسائل', duration: '40 دقيقة', completed: false, current: true },
-      ]
-    },
-    {
-      unitTitle: 'الوحدة الثانية: التخصص والتعمق الأكاديمي',
-      lessons: [
-        { id: 4, title: 'الدراسة التفصيلية للظواهر الحيوية', duration: '30 دقيقة', completed: false, current: true },
-        { id: 5, title: 'الاختبار النصف سنوي الشامل', duration: '15 دقيقة', isQuiz: true, quizId: 'biology-quiz-1', current: true },
-      ]
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      setLoading(true);
+      const [subData, lesData] = await Promise.all([
+        getSubjectById(id, activePathKey),
+        getSubjectLessons(id),
+      ]);
+      if (isMounted) {
+        setSubject(subData);
+        setLessons(lesData);
+        setLoading(false);
+      }
     }
-  ];
+    loadData();
+    return () => { isMounted = false; };
+  }, [id, activePathKey]);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem', color: 'var(--green-neon)', gap: '0.8rem', alignItems: 'center' }}>
+        <Loader2 size={26} className="spin-icon" />
+        <span>جاري تحميل تفاصيل المادة والدروس من Firestore...</span>
+      </div>
+    );
+  }
+
+  if (!subject) return null;
+
+  const Icon = subject.icon || BookOpen;
+
+  // Group lessons by unit
+  const unitsMap = lessons.reduce((acc, lesson) => {
+    const uTitle = lesson.unitTitle || 'الوحدة الأولى: المفاهيم الأساسية';
+    if (!acc[uTitle]) acc[uTitle] = [];
+    acc[uTitle].push(lesson);
+    return acc;
+  }, {});
+
+  const unitsList = Object.entries(unitsMap).map(([unitTitle, unitLessons]) => ({
+    unitTitle,
+    lessons: unitLessons,
+  }));
 
   return (
     <div className="subject-details-container">
@@ -50,9 +75,9 @@ export default function SubjectDetails() {
       <div
         className="subject-banner-card"
         style={{
-          '--subj-color': subject.color,
-          '--subj-glow': subject.glow,
-          '--subj-accent': subject.accent,
+          '--subj-color': subject.color || 'var(--green-neon)',
+          '--subj-glow': subject.glow || 'rgba(0, 230, 118, 0.3)',
+          '--subj-accent': subject.accent || 'rgba(0, 230, 118, 0.1)',
         }}
       >
         <div className="banner-content">
@@ -62,8 +87,8 @@ export default function SubjectDetails() {
           <h1 className="banner-title">{subject.title}</h1>
           <p className="banner-desc">{subject.description}</p>
           <div className="banner-stats-row">
-            <span>📚 {subject.lessonsCount} درسًا معتمدًا</span>
-            <span>⚡ نسبة إنجازك: {subject.progress}%</span>
+            <span>📚 {lessons.length || subject.lessonsCount} درسًا معتمدًا</span>
+            <span>⚡ نسبة إنجازك: {subject.progress || 0}%</span>
           </div>
         </div>
       </div>
@@ -72,7 +97,7 @@ export default function SubjectDetails() {
       <div className="units-list-section">
         <h2 className="units-heading">منهج المادة والدروس المتاحة</h2>
         <div className="units-accordion-group">
-          {SAMPLE_UNITS.map((unit, uIdx) => (
+          {unitsList.map((unit, uIdx) => (
             <div key={uIdx} className="unit-card">
               <h3 className="unit-title">{unit.unitTitle}</h3>
               <div className="lessons-group">
@@ -89,14 +114,14 @@ export default function SubjectDetails() {
                   >
                     <div className="lesson-left">
                       {lesson.completed && <CheckCircle size={20} className="icon-done" />}
-                      {lesson.current && <Play size={20} className="icon-current" fill="currentColor" />}
+                      {!lesson.completed && !lesson.locked && <Play size={20} className="icon-current" fill="currentColor" />}
                       {lesson.locked && <Lock size={20} className="icon-locked" />}
                       <span className="lesson-name">{lesson.title}</span>
                     </div>
 
                     <div className="lesson-right">
                       <span className="lesson-time"><Clock size={14} /> {lesson.duration}</span>
-                      {lesson.current && (
+                      {!lesson.locked && (
                         <button type="button" className="btn-primary lesson-start-btn">
                           <span>متابعة الدرس</span>
                         </button>

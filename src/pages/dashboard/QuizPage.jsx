@@ -129,25 +129,45 @@ const QUIZ_DATA = {
   ],
 };
 
+import { useUserSession } from '../../context/UserSessionContext';
+import { getQuizById, saveQuizSubmission } from '../../services/contentService';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+
 export default function QuizPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser } = useUserSession();
+
+  const [quizData, setQuizData] = useState(null);
+  const [loading, setLoading]   = useState(true);
 
   // State initialization
   const [currentIdx, setCurrentIdx] = useState(0);
   const [userAnswers, setUserAnswers] = useState({}); // { [qId]: 'أ' | essay string }
   const [flaggedQuestions, setFlaggedQuestions] = useState({}); // { [qId]: boolean }
-  const [timeLeftSeconds, setTimeLeftSeconds] = useState(QUIZ_DATA.durationMinutes * 60);
+  const [timeLeftSeconds, setTimeLeftSeconds] = useState(900);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [resultsFilter, setResultsFilter] = useState('all'); // 'all' | 'correct' | 'incorrect' | 'essay'
 
-  const currentQ = QUIZ_DATA.questions[currentIdx];
-  const totalQuestions = QUIZ_DATA.questions.length;
+  useEffect(() => {
+    let isMounted = true;
+    async function loadQuiz() {
+      setLoading(true);
+      const data = await getQuizById(id);
+      if (isMounted) {
+        setQuizData(data);
+        setTimeLeftSeconds((data.durationMinutes || 15) * 60);
+        setLoading(false);
+      }
+    }
+    loadQuiz();
+    return () => { isMounted = false; };
+  }, [id]);
 
   // Countdown timer logic
   useEffect(() => {
-    if (isSubmitted) return;
+    if (isSubmitted || loading || !quizData) return;
 
     const timer = setInterval(() => {
       setTimeLeftSeconds((prev) => {
@@ -161,7 +181,27 @@ export default function QuizPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isSubmitted]);
+  }, [isSubmitted, loading, quizData]);
+
+  const handleConfirmSubmit = () => {
+    setIsSubmitted(true);
+    setShowConfirmModal(false);
+
+    if (quizData && currentUser?.uid) {
+      const res = calculateResults();
+      saveQuizSubmission(currentUser.uid, quizData.id, res);
+    }
+  };
+
+  const handleAutoSubmit = () => {
+    setIsSubmitted(true);
+    setShowConfirmModal(false);
+
+    if (quizData && currentUser?.uid) {
+      const res = calculateResults();
+      saveQuizSubmission(currentUser.uid, quizData.id, res);
+    }
+  };
 
   const formatTimer = (secs) => {
     const mins = Math.floor(secs / 60);
@@ -192,15 +232,11 @@ export default function QuizPage() {
     }));
   };
 
-  const handleAutoSubmit = () => {
-    setIsSubmitted(true);
-    setShowConfirmModal(false);
-  };
 
-  const handleConfirmSubmit = () => {
-    setIsSubmitted(true);
-    setShowConfirmModal(false);
-  };
+
+  const activeQuiz = quizData || QUIZ_DATA;
+  const currentQ = activeQuiz.questions[currentIdx] || activeQuiz.questions[0];
+  const totalQuestions = activeQuiz.questions.length;
 
   const countAnswered = Object.keys(userAnswers).filter(
     (k) => userAnswers[k] && String(userAnswers[k]).trim() !== ''
@@ -215,7 +251,7 @@ export default function QuizPage() {
     let essayCount = 0;
     const topicStats = {};
 
-    QUIZ_DATA.questions.forEach((q) => {
+    activeQuiz.questions.forEach((q) => {
       totalMarks += q.marks;
       if (!topicStats[q.topic]) {
         topicStats[q.topic] = { total: 0, correct: 0 };
@@ -233,7 +269,6 @@ export default function QuizPage() {
         }
       } else if (q.type === 'essay') {
         essayCount += 1;
-        // Award full credit for non-empty essay in demo auto-grade + model match
         const essayAns = userAnswers[q.id] || '';
         if (essayAns.trim().length > 15) {
           earnedMarks += q.marks;

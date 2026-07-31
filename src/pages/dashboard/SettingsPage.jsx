@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useUserSession } from '../../context/UserSessionContext';
+import { updateUserDocument } from '../../services/firestoreService';
 import {
   User, Mail, Phone, Lock, Bell, Palette, Globe, ShieldCheck,
   Save, Check, Laptop, Smartphone, KeyRound, CheckCircle2,
-  Sliders, Eye, EyeOff, AlertCircle, Sparkles, Moon, Sun, Monitor
+  Sliders, Eye, EyeOff, AlertCircle, Sparkles, Moon, Sun, Monitor, Loader2
 } from 'lucide-react';
 import './SettingsPage.css';
 
@@ -21,14 +22,14 @@ export default function SettingsPage() {
   const [accountInfo, setAccountInfo] = useState({
     name:  resolvedName,
     email: resolvedEmail,
-    phone: '',
-    bio:   '',
+    phone: userProfile?.phone || '',
+    bio:   userProfile?.bio   || '',
   });
 
   const [interfaceSettings, setInterfaceSettings] = useState({
-    accentColor: 'emerald', // 'emerald' | 'cyan' | 'amber' | 'purple'
-    themeMode: 'ultra-dark', // 'ultra-dark' | 'soft-slate' | 'system'
-    fontSize: 'medium', // 'normal' | 'medium' | 'large'
+    accentColor: 'emerald',
+    themeMode: 'ultra-dark',
+    fontSize: 'medium',
     animations: true,
   });
 
@@ -40,8 +41,8 @@ export default function SettingsPage() {
   });
 
   const [languageSettings, setLanguageSettings] = useState({
-    lang: 'ar', // 'ar' | 'en'
-    calendar: 'hijri', // 'hijri' | 'gregorian'
+    lang: 'ar',
+    calendar: 'hijri',
     timezone: 'GMT+3 (مكة المكرمة)',
   });
 
@@ -59,8 +60,23 @@ export default function SettingsPage() {
   const [showPass, setShowPass] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('تم حفظ التغييرات بنجاح! ✨');
+  const [saving, setSaving] = useState(false);
 
-  const triggerSaveToast = (msg = 'تم حفظ التغييرات بنجاح! ✨') => {
+  const handleGlobalSave = async (msg = 'تم حفظ التغييرات بنجاح في Firestore! ✨') => {
+    if (currentUser?.uid) {
+      setSaving(true);
+      try {
+        await updateUserDocument(currentUser.uid, {
+          fullName: accountInfo.name,
+          phone: accountInfo.phone,
+          bio: accountInfo.bio,
+        });
+      } catch (err) {
+        console.error('Error saving settings to Firestore:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
     setToastMsg(msg);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
@@ -98,10 +114,11 @@ export default function SettingsPage() {
         <button
           type="button"
           className="btn-save-settings"
-          onClick={() => triggerSaveToast()}
+          onClick={() => handleGlobalSave()}
+          disabled={saving}
         >
-          <Save size={18} />
-          <span>حفظ التغييرات</span>
+          {saving ? <Loader2 size={18} className="spin-icon" /> : <Save size={18} />}
+          <span>{saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}</span>
         </button>
       </div>
 

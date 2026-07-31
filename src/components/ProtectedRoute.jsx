@@ -1,17 +1,18 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useUserSession } from '../context/UserSessionContext';
 import { Loader2 } from 'lucide-react';
 import LogoSvg from './LogoSvg';
 
 /**
- * ProtectedRoute component that verifies Firebase Authentication state.
- * - Displays a loading screen while Firebase checks token validity.
+ * ProtectedRoute component that verifies Firebase Authentication and Onboarding State.
+ * - Displays a loading screen while Firebase checks token validity and loads Firestore user profile.
  * - Redirects unauthenticated users to /login automatically.
- * - Renders protected child components or Outlet for authenticated users.
+ * - Redirects users with incomplete onboarding to the appropriate setup step when attempting to access dashboard pages.
  */
-export default function ProtectedRoute({ children }) {
-  const { currentUser, loadingAuth } = useUserSession();
+export default function ProtectedRoute({ children, allowIncompleteOnboarding = false }) {
+  const { currentUser, userProfile, loadingAuth } = useUserSession();
+  const location = useLocation();
 
   if (loadingAuth) {
     return (
@@ -34,14 +35,32 @@ export default function ProtectedRoute({ children }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--green-neon)', fontWeight: 700 }}>
           <Loader2 size={22} className="spin-icon" />
-          <span>جاري التحقق من حالة الحساب...</span>
+          <span>جاري التحقق من الحساب وتحميل البيانات...</span>
         </div>
       </div>
     );
   }
 
+  // Not logged in -> redirect to login
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check onboarding completeness for dashboard and main routes
+  if (!allowIncompleteOnboarding) {
+    const hasGrade = Boolean(userProfile?.grade);
+    const hasPath  = Boolean(userProfile?.path);
+    const hasSpec  = Boolean(userProfile?.specialization);
+
+    if (!hasGrade) {
+      return <Navigate to="/select-grade" replace />;
+    }
+    if (!hasPath) {
+      return <Navigate to="/select-path" replace />;
+    }
+    if (!hasSpec) {
+      return <Navigate to="/select-specialization" replace />;
+    }
   }
 
   return children ? children : <Outlet />;

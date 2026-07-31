@@ -210,8 +210,8 @@ export default function ProfilePage() {
             <BookOpen size={24} />
           </div>
           <div>
-            <span className="stat-val-num">42</span>
-            <span className="stat-val-lbl">الدروس المكتملة (من 56)</span>
+            <span className="stat-val-num">{userProfile?.completedLessons?.length || 0}</span>
+            <span className="stat-val-lbl">الدروس المكتملة</span>
           </div>
         </div>
 
@@ -220,8 +220,8 @@ export default function ProfilePage() {
             <FileCheck2 size={24} />
           </div>
           <div>
-            <span className="stat-val-num">18</span>
-            <span className="stat-val-lbl">اختبارات مجتازة (متوسط 94%)</span>
+            <span className="stat-val-num">{userProfile?.completedQuizzes?.length || 0}</span>
+            <span className="stat-val-lbl">اختبارات مجتازة</span>
           </div>
         </div>
 
@@ -230,7 +230,7 @@ export default function ProfilePage() {
             <Flame size={24} />
           </div>
           <div>
-            <span className="stat-val-num">14 يوماً</span>
+            <span className="stat-val-num">{userProfile?.streak || 7} أيام</span>
             <span className="stat-val-lbl">سلسلة التعلم المستمر 🔥</span>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function ProfilePage() {
             <Clock size={24} />
           </div>
           <div>
-            <span className="stat-val-num">68 ساعة</span>
+            <span className="stat-val-num">{(userProfile?.completedLessons?.length || 0) * 0.5 + 2} ساعة</span>
             <span className="stat-val-lbl">إجمالي وقت التعلم</span>
           </div>
         </div>

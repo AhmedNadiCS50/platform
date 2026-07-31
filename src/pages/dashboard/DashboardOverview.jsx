@@ -1,70 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '../../context/UserSessionContext';
+import { getSubjectsByPath } from '../../services/contentService';
 import {
   Sparkles,
   Play,
   Clock,
   BookOpen,
-  Calendar,
   CheckCircle2,
   Award,
   Flame,
   BarChart2,
-  ArrowUpRight,
   TrendingUp,
   FileText,
-  ChevronLeft
+  Loader2,
+  ArrowRight
 } from 'lucide-react';
 
-const WEEK_DAYS = [
-  { day: 'السبت', subject: 'الأحياء', time: '04:00 م', status: 'done' },
-  { day: 'الأحد', subject: 'الفيزياء', time: '05:30 م', status: 'done' },
-  { day: 'الإثنين', subject: 'الكيمياء', time: '04:00 م', status: 'today' },
-  { day: 'الثلاثاء', subject: 'الرياضيات', time: '06:00 م', status: 'upcoming' },
-  { day: 'الأربعاء', subject: 'اللغة العربية', time: '04:30 م', status: 'upcoming' },
-  { day: 'الخميس', subject: 'اختبار شمول', time: '07:00 م', status: 'upcoming' },
-  { day: 'الجمعة', subject: 'راحة ومراجعة', time: '—', status: 'rest' },
-];
-
-const RECENT_ACTIVITIES = [
-  {
-    id: 1,
-    title: 'أتممت درس "الانقسام الميوزي والخلايا الحية"',
-    type: 'lesson',
-    time: 'منذ ساعتين',
-    points: '+50 نقطة',
-    color: '#00e676',
-  },
-  {
-    id: 2,
-    title: 'حصلت على درجة 95% في "اختبار الفيزياء التجريبي"',
-    type: 'exam',
-    time: 'أمس الساعة 8:30 م',
-    points: '+120 نقطة',
-    color: '#38bdf8',
-  },
-  {
-    id: 3,
-    title: 'فتحت وسام "المستكشف المتميز" للتفوق المستمر',
-    type: 'badge',
-    time: 'منذ 3 أيام',
-    points: '+200 نقطة',
-    color: '#fbbf24',
-  },
-  {
-    id: 4,
-    title: 'أنهيت 25 سؤالاً في بنك أسئلة الكيمياء العضوية',
-    type: 'practice',
-    time: 'منذ 4 أيام',
-    points: '+80 نقطة',
-    color: '#c084fc',
-  },
-];
-
 export default function DashboardOverview() {
+  const navigate = useNavigate();
   const { currentUser, userProfile, selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+  const [userSubjects, setUserSubjects] = useState([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(true);
 
-  // Resolve first name from Firestore fullName or Auth displayName
+  const activePathKey = userProfile?.path || selectedPath || 'medicine';
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSubjects() {
+      setLoadingSubjects(true);
+      const subjects = await getSubjectsByPath(activePathKey);
+      if (isMounted) {
+        setUserSubjects(subjects);
+        setLoadingSubjects(false);
+      }
+    }
+    loadSubjects();
+    return () => { isMounted = false; };
+  }, [activePathKey]);
+
+  // Resolve first name
   const fullName = userProfile?.fullName || currentUser?.displayName || '';
   const firstName = fullName.trim().split(' ')[0] || 'طالب';
 
@@ -88,6 +63,18 @@ export default function DashboardOverview() {
   };
 
   const getSpecializationName = () => userProfile?.specialization || selectedSpecialization || null;
+
+  // Compute real metrics from Firestore profile data
+  const completedLessonsCount = userProfile?.completedLessons?.length || 0;
+  const completedQuizzesCount = userProfile?.completedQuizzes?.length || 0;
+  const lastLesson = userProfile?.lastLesson || null;
+
+  // Calculate total lessons dynamically from subjects list
+  const totalLessonsCount = userSubjects.reduce((acc, sub) => acc + (sub.lessonsCount || 5), 0) || 15;
+  const completionPercentage = Math.min(100, Math.round((completedLessonsCount / totalLessonsCount) * 100));
+
+  // Recent real activities from Firestore (completed quizzes)
+  const completedQuizzesList = userProfile?.completedQuizzes || [];
 
   return (
     <div className="dash-home-container">
@@ -119,14 +106,14 @@ export default function DashboardOverview() {
           <div className="dash-streak-pill">
             <Flame size={20} className="flame-icon" />
             <div>
-              <span className="streak-num">7 أيام</span>
-              <span className="streak-lbl">حماس مستمر!</span>
+              <span className="streak-num">{completedLessonsCount > 0 ? `${completedLessonsCount} دروس` : 'ابدأ مسيرتك'}</span>
+              <span className="streak-lbl">إنجاز حقيقي</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2 Top Section Grid: Continue Lesson + Progress */}
+      {/* 2. Top Section Grid: Continue Lesson + Progress */}
       <div className="dash-grid-top">
 
         {/* Card 1: Continue Last Lesson */}
@@ -134,34 +121,51 @@ export default function DashboardOverview() {
           <div className="dash-card-header">
             <div className="dash-card-tag green">
               <BookOpen size={16} />
-              <span>استكمال آخر درس</span>
+              <span>آخر درس تم فتحه</span>
             </div>
-            <span className="lesson-time-rem">
-              <Clock size={14} /> 15 دقيقة متبقية
-            </span>
+            {lastLesson && (
+              <span className="lesson-time-rem">
+                <Clock size={14} /> {lastLesson.duration || '30 دقيقة'}
+              </span>
+            )}
           </div>
 
           <div className="dash-lesson-details">
-            <h3 className="dash-lesson-title">التركيب الخلوي وتضاعف الحمض النووي (DNA)</h3>
-            <p className="dash-lesson-sub">المادة: الأحياء • الوحدة الثالثة: علم الجينات</p>
+            <h3 className="dash-lesson-title">
+              {lastLesson ? lastLesson.title : 'لم تبدأ في قراءة أي درس بعد'}
+            </h3>
+            <p className="dash-lesson-sub">
+              {lastLesson
+                ? `المادة: ${lastLesson.subjectTitle || 'المادة الدراسية'}`
+                : 'اختر مادة دراسية وابدأ في تصفح دروسك المخصصة لمسارك'}
+            </p>
 
             <div className="dash-lesson-progress">
               <div className="dash-progress-text">
-                <span>نسبة إكمال الدرس</span>
-                <span className="progress-perc">72%</span>
+                <span>إنجاز الدروس بالمقارنة بالمنهج</span>
+                <span className="progress-perc">{completionPercentage}%</span>
               </div>
               <div className="dash-progress-track">
-                <div className="dash-progress-fill" style={{ width: '72%' }} />
+                <div className="dash-progress-fill" style={{ width: `${completionPercentage}%` }} />
               </div>
             </div>
           </div>
 
           <div className="dash-lesson-actions">
-            <button type="button" className="btn-primary dash-continue-btn">
+            <button
+              type="button"
+              className="btn-primary dash-continue-btn"
+              onClick={() => {
+                if (lastLesson?.id) {
+                  navigate(`/dashboard/lesson/${lastLesson.id}`);
+                } else {
+                  navigate('/dashboard/subjects');
+                }
+              }}
+            >
               <Play size={18} fill="#040806" />
-              <span>متابعة التعلم</span>
+              <span>{lastLesson ? 'استكمال التعلم' : 'تصفح المواد والدروس'}</span>
             </button>
-            <span className="dash-next-topic">الدرس التالي: "الترجمة والتنسيق البروتيني"</span>
           </div>
         </div>
 
@@ -170,9 +174,11 @@ export default function DashboardOverview() {
           <div className="dash-card-header">
             <div className="dash-card-tag blue">
               <TrendingUp size={16} />
-              <span>نسبة التقدم الأكاديمي</span>
+              <span>نسبة الإنجاز الأكاديمي</span>
             </div>
-            <span className="dash-badge-glow">ممتاز 🔥</span>
+            <span className="dash-badge-glow">
+              {completionPercentage >= 50 ? 'ممتاز 🔥' : 'في بداية المسار 🚀'}
+            </span>
           </div>
 
           <div className="dash-progress-main">
@@ -184,46 +190,49 @@ export default function DashboardOverview() {
                   cy="50"
                   r="42"
                   className="gauge-fill"
-                  style={{ strokeDashoffset: '40' }}
+                  style={{ strokeDashoffset: `${264 - (264 * completionPercentage) / 100}` }}
                 />
               </svg>
               <div className="gauge-content">
-                <span className="gauge-number">84%</span>
-                <span className="gauge-label">إنجاز كلي</span>
+                <span className="gauge-number">{completionPercentage}%</span>
+                <span className="gauge-label">إنجازك الفعلي</span>
               </div>
             </div>
 
             <div className="dash-subject-bars">
-              <div className="subj-bar-item">
-                <div className="subj-info">
-                  <span>الأحياء</span>
-                  <span>92%</span>
+              {loadingSubjects ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}>
+                  <Loader2 size={16} className="spin-icon" />
+                  <span>جاري حساب المواد...</span>
                 </div>
-                <div className="subj-track"><div className="subj-fill" style={{ width: '92%', background: '#00e676' }} /></div>
-              </div>
-
-              <div className="subj-bar-item">
-                <div className="subj-info">
-                  <span>الفيزياء</span>
-                  <span>78%</span>
-                </div>
-                <div className="subj-track"><div className="subj-fill" style={{ width: '78%', background: '#38bdf8' }} /></div>
-              </div>
-
-              <div className="subj-bar-item">
-                <div className="subj-info">
-                  <span>الكيمياء</span>
-                  <span>85%</span>
-                </div>
-                <div className="subj-track"><div className="subj-fill" style={{ width: '85%', background: '#c084fc' }} /></div>
-              </div>
+              ) : userSubjects.length === 0 ? (
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>لا توجد مواد مسجلة لمسارك حتى الآن.</p>
+              ) : (
+                userSubjects.slice(0, 3).map((sub) => (
+                  <div key={sub.id} className="subj-bar-item">
+                    <div className="subj-info">
+                      <span>{sub.title}</span>
+                      <span>{sub.progress || 0}%</span>
+                    </div>
+                    <div className="subj-track">
+                      <div
+                        className="subj-fill"
+                        style={{
+                          width: `${sub.progress || 0}%`,
+                          background: sub.color || 'var(--green-neon)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
 
       </div>
 
-      {/* 3 Middle Section Grid: Learning Stats + Upcoming Exam */}
+      {/* 3. Middle Section Grid: Real Learning Stats */}
       <div className="dash-grid-mid">
 
         {/* Card 3: Learning Stats */}
@@ -231,160 +240,101 @@ export default function DashboardOverview() {
           <div className="dash-card-header">
             <div className="dash-card-tag amber">
               <BarChart2 size={16} />
-              <span>إحصائيات التعلم</span>
+              <span>إحصائياتك الحقيقية في Firestore</span>
             </div>
-            <button type="button" className="dash-text-link">
-              عرض التفاصيل <ArrowUpRight size={14} />
-            </button>
           </div>
 
           <div className="dash-stats-items-grid">
             <div className="stat-box-item">
               <div className="stat-box-icon green">
-                <Clock size={20} />
+                <BookOpen size={20} />
               </div>
               <div className="stat-box-info">
-                <span className="stat-box-val">42 ساعة</span>
-                <span className="stat-box-lbl">وقت الدراسة</span>
+                <span className="stat-box-val">{userSubjects.length} مواد</span>
+                <span className="stat-box-lbl">المواد المسجل بها</span>
               </div>
             </div>
 
             <div className="stat-box-item">
               <div className="stat-box-icon blue">
-                <FileText size={20} />
+                <CheckCircle2 size={20} />
               </div>
               <div className="stat-box-info">
-                <span className="stat-box-val">340 سؤالاً</span>
-                <span className="stat-box-lbl">تمت إجابته</span>
-              </div>
-            </div>
-
-            <div className="stat-box-item">
-              <div className="stat-box-icon amber">
-                <Flame size={20} />
-              </div>
-              <div className="stat-box-info">
-                <span className="stat-box-val">7 أيام</span>
-                <span className="stat-box-lbl">سلسلة الحماس</span>
+                <span className="stat-box-val">{completedLessonsCount} دروس</span>
+                <span className="stat-box-lbl">الدروس المكتملة</span>
               </div>
             </div>
 
             <div className="stat-box-item">
               <div className="stat-box-icon purple">
+                <FileText size={20} />
+              </div>
+              <div className="stat-box-info">
+                <span className="stat-box-val">{completedQuizzesCount} اختبارات</span>
+                <span className="stat-box-lbl">الاختبارات المكتملة</span>
+              </div>
+            </div>
+
+            <div className="stat-box-item">
+              <div className="stat-box-icon amber">
                 <Award size={20} />
               </div>
               <div className="stat-box-info">
-                <span className="stat-box-val">المرتبة #4</span>
-                <span className="stat-box-lbl">ترتيب الدفعة</span>
+                <span className="stat-box-val">{completedLessonsCount * 50 + completedQuizzesCount * 100} نقطة</span>
+                <span className="stat-box-lbl">مجموع النقاط المكتسبة</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Card 4: Upcoming Exam */}
-        <div className="dash-card exam-card">
-          <div className="dash-card-header">
-            <div className="dash-card-tag purple">
-              <Calendar size={16} />
-              <span>الاختبار القادم</span>
-            </div>
-            <span className="exam-countdown-badge">بعد يومين ⏳</span>
-          </div>
-
-          <div className="dash-exam-body">
-            <h3 className="dash-exam-title">اختبار الأحياء النصفي — الشامل</h3>
-            <p className="dash-exam-meta">
-              <span>🗓️ الأحد، 3 أغسطس 2026</span>
-              <span>⏰ 04:00 مساءً</span>
-            </p>
-            <div className="dash-exam-pills">
-              <span>🎯 25 سؤالاً</span>
-              <span>⏱️ 45 دقيقة</span>
-              <span>💯 100 درجة</span>
-            </div>
-          </div>
-
-          <button type="button" className="btn-secondary dash-exam-btn">
-            <span>استعد ومارس المراجعة</span>
-            <ChevronLeft size={16} />
-          </button>
-        </div>
-
-      </div>
-
-      {/* 4 Bottom Section Grid: Weekly Schedule + Recent Activity */}
-      <div className="dash-grid-bottom">
-
-        {/* Card 5: Weekly Schedule */}
-        <div className="dash-card schedule-card">
+        {/* Card 4: Recent Real Activity */}
+        <div className="dash-card activities-card">
           <div className="dash-card-header">
             <div className="dash-card-tag green">
-              <Calendar size={16} />
-              <span>جدول الأسبوع</span>
+              <Clock size={16} />
+              <span>آخر أنشطتك</span>
             </div>
-            <span className="schedule-week-lbl">الأسبوع 4 • الفصل الأول</span>
           </div>
 
-          <div className="dash-schedule-list">
-            {WEEK_DAYS.map((item, idx) => (
-              <div
-                key={idx}
-                className={`schedule-row ${item.status === 'today' ? 'is-today' : ''}`}
-              >
-                <div className="sched-day-col">
-                  <span className="sched-day-name">{item.day}</span>
-                  {item.status === 'today' && <span className="today-badge">اليوم</span>}
-                </div>
-
-                <div className="sched-subj-col">
-                  <span className="sched-subj-name">{item.subject}</span>
-                </div>
-
-                <div className="sched-time-col">
-                  <span>{item.time}</span>
-                </div>
-
-                <div className="sched-status-col">
-                  {item.status === 'done' && (
-                    <span className="status-chip done"><CheckCircle2 size={14} /> مكتمل</span>
-                  )}
-                  {item.status === 'today' && (
-                    <span className="status-chip active"><Play size={12} fill="currentColor" /> مباشر</span>
-                  )}
-                  {item.status === 'upcoming' && (
-                    <span className="status-chip upcoming">قادم</span>
-                  )}
-                  {item.status === 'rest' && (
-                    <span className="status-chip rest">عطلة</span>
-                  )}
-                </div>
+          <div className="activities-list">
+            {completedQuizzesList.length === 0 && !lastLesson ? (
+              <div style={{ textTransform: 'none', padding: '1.5rem 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: '0.95rem' }}>لا توجد أنشطة سابقة حتى الآن.</p>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ marginTop: '0.8rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                  onClick={() => navigate('/dashboard/subjects')}
+                >
+                  ابدأ مسيرتك الدراسية الآن
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Card 6: Recent Activities */}
-        <div className="dash-card activity-card">
-          <div className="dash-card-header">
-            <div className="dash-card-tag blue">
-              <Award size={16} />
-              <span>آخر النشاطات</span>
-            </div>
-          </div>
-
-          <div className="dash-activity-timeline">
-            {RECENT_ACTIVITIES.map((act) => (
-              <div key={act.id} className="activity-item">
-                <div className="act-dot" style={{ background: act.color, boxShadow: `0 0 10px ${act.color}` }} />
-                <div className="act-info">
-                  <h4 className="act-title">{act.title}</h4>
-                  <div className="act-meta">
-                    <span className="act-time">{act.time}</span>
-                    <span className="act-points" style={{ color: act.color }}>{act.points}</span>
+            ) : (
+              <>
+                {lastLesson && (
+                  <div className="activity-item">
+                    <div className="activity-icon green">
+                      <BookOpen size={16} />
+                    </div>
+                    <div className="activity-details">
+                      <p className="activity-title">تصفحت درس: "{lastLesson.title}"</p>
+                      <span className="activity-time">آخر تصفح</span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                )}
+                {completedQuizzesList.slice(0, 3).map((q, idx) => (
+                  <div key={idx} className="activity-item">
+                    <div className="activity-icon blue">
+                      <FileText size={16} />
+                    </div>
+                    <div className="activity-details">
+                      <p className="activity-title">اجتزت اختبار بدرجة {q.percentage}% ({q.score} درجة)</p>
+                      <span className="activity-time">{q.date ? new Date(q.date).toLocaleDateString('ar-EG') : 'حديثاً'}</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
 
