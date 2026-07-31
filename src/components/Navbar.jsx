@@ -42,7 +42,6 @@ export default function Navbar({ onOpenModal }) {
             <LogoSvg width={34} height={34} />
           </div>
           <div className="brand-text-group">
-            <span className="brand-name-en">VISION</span>
             <span className="brand-name-ar">رؤيــة</span>
           </div>
         </a>

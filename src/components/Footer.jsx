@@ -29,7 +29,6 @@ export default function Footer({ onOpenModal }) {
                 <LogoSvg width={30} height={30} />
               </div>
               <div className="brand-text-group">
-                <span className="brand-name-en">VISION</span>
                 <span className="brand-name-ar">رؤيــة</span>
               </div>
             </a>
