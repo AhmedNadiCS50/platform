@@ -75,18 +75,24 @@ const SAMPLE_ACHIEVEMENTS = [
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+  const { currentUser, userProfile, selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
 
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  // User information
-  const userName = 'أحمد محمد علي';
-  const userEmail = 'ahmed.nadi@vision.edu.sa';
+  // Resolve user info — Firestore first, Auth fallback
+  const userName    = userProfile?.fullName  || currentUser?.displayName || 'طالب';
+  const userEmail   = userProfile?.email     || currentUser?.email       || '—';
+  const userInitials = userName.trim().substring(0, 2);
 
-  const pathConfig = PATH_LABELS[selectedPath] || PATH_LABELS.medicine;
-  const gradeText = GRADE_LABELS[selectedGrade] || 'الصف الثاني الثانوي';
-  const specializationText = selectedSpecialization || 'الكيمياء الحيوية والوراثة';
+  // Resolve academic data — Firestore first, local session fallback
+  const resolvedGrade  = userProfile?.grade          || selectedGrade;
+  const resolvedPath   = userProfile?.path           || selectedPath;
+  const resolvedSpec   = userProfile?.specialization || selectedSpecialization;
+
+  const pathConfig      = PATH_LABELS[resolvedPath]   || PATH_LABELS.medicine;
+  const gradeText       = GRADE_LABELS[resolvedGrade] || '—';
+  const specializationText = resolvedSpec             || '—';
 
   const handleCopyEmail = () => {
     navigator.clipboard?.writeText(userEmail);
@@ -102,7 +108,7 @@ export default function ProfilePage() {
           <div className="profile-user-left">
             <div className="profile-avatar-wrap">
               <div className="profile-avatar-inner">
-                <span>أح</span>
+                <span>{userInitials}</span>
               </div>
               <button
                 type="button"

@@ -28,6 +28,7 @@ import LessonPage from './pages/dashboard/LessonPage';
 import QuizPage from './pages/dashboard/QuizPage';
 import ProfilePage from './pages/dashboard/ProfilePage';
 import SettingsPage from './pages/dashboard/SettingsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function HomePage({ onOpenModal }) {
   return (
@@ -88,29 +89,37 @@ export default function App() {
   return (
     <>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<HomePage onOpenModal={handleOpenModal} />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/select-grade" element={<SelectGrade />} />
-        <Route path="/select-path" element={<SelectPath />} />
-        <Route path="/select-specialization" element={<SelectSpecialization />} />
-        <Route path="/quiz/:id" element={<QuizPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
 
-        {/* Dashboard Layout with Nested Routes */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<DashboardOverview />} />
-          <Route path="subjects" element={<SubjectsPage />} />
-          <Route path="subjects/:id" element={<SubjectDetails />} />
-          <Route path="lesson/:id" element={<LessonPage />} />
-          <Route path="quiz/:id" element={<QuizPage />} />
-          <Route path="exams" element={<QuizPage />} />
-          <Route path="progress" element={<PlaceholderPage title="التقدم" />} />
-          <Route path="achievements" element={<PlaceholderPage title="الإنجازات" />} />
-          <Route path="profile" element={<ProfilePage />} />
-          <Route path="settings" element={<SettingsPage />} />
+        {/* Protected Routes — Require Authentication */}
+        <Route element={<ProtectedRoute />}>
+          {/* Onboarding Routes */}
+          <Route path="/select-grade" element={<SelectGrade />} />
+          <Route path="/select-path" element={<SelectPath />} />
+          <Route path="/select-specialization" element={<SelectSpecialization />} />
+
+          {/* Standalone Protected Pages */}
+          <Route path="/quiz/:id" element={<QuizPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+
+          {/* Dashboard Layout & Nested Sub-routes */}
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<DashboardOverview />} />
+            <Route path="subjects" element={<SubjectsPage />} />
+            <Route path="subjects/:id" element={<SubjectDetails />} />
+            <Route path="lesson/:id" element={<LessonPage />} />
+            <Route path="quiz/:id" element={<QuizPage />} />
+            <Route path="exams" element={<QuizPage />} />
+            <Route path="progress" element={<PlaceholderPage title="التقدم" />} />
+            <Route path="achievements" element={<PlaceholderPage title="الإنجازات" />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
         </Route>
       </Routes>
 

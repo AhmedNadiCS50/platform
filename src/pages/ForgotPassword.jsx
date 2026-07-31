@@ -1,17 +1,34 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Send, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, Send, ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import LogoSvg from '../components/LogoSvg';
+import { sendPasswordResetLink, getArabicAuthErrorMessage } from '../services/authService';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email) return;
-    // No backend — simulate success
-    setSent(true);
+    if (!email) {
+      setErrorMessage('يرجى أدخل بريدك الإلكتروني.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      await sendPasswordResetLink(email);
+      setSent(true);
+    } catch (error) {
+      const arabicMsg = getArabicAuthErrorMessage(error.code);
+      setErrorMessage(arabicMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,6 +67,28 @@ export default function ForgotPassword() {
                 </p>
               </div>
 
+              {/* Error Message Banner */}
+              {errorMessage && (
+                <div
+                  className="reg-error-msg"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    color: '#fca5a5',
+                    padding: '0.8rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: '1.2rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
               {/* Form */}
               <form className="login-form" onSubmit={handleSubmit} noValidate>
                 <div className="login-field">
@@ -68,7 +107,11 @@ export default function ForgotPassword() {
                       placeholder="example@email.com"
                       className="login-input"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (errorMessage) setErrorMessage('');
+                      }}
+                      disabled={loading}
                       required
                     />
                   </div>
@@ -78,9 +121,19 @@ export default function ForgotPassword() {
                   type="submit"
                   className="btn-primary login-submit-btn"
                   style={{ marginTop: '0.4rem' }}
+                  disabled={loading}
                 >
-                  <span>إرسال الرابط</span>
-                  <Send size={17} />
+                  {loading ? (
+                    <>
+                      <Loader2 size={17} className="spin-icon" />
+                      <span>جاري الإرسال...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>إرسال الرابط</span>
+                      <Send size={17} />
+                    </>
+                  )}
                 </button>
               </form>
             </>

@@ -7,6 +7,17 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800;900&family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@300;400;600;700;800;900&family=Cinzel:wght@500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
 
+/* Utility: spinning loader icon for Loader2 from lucide-react */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+
 :root {
   /* Ultra-Deep Mesh Background Palette */
   --bg-base: #040806;

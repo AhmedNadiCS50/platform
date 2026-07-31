@@ -62,23 +62,32 @@ const RECENT_ACTIVITIES = [
 ];
 
 export default function DashboardOverview() {
-  const { selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+  const { currentUser, userProfile, selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+
+  // Resolve first name from Firestore fullName or Auth displayName
+  const fullName = userProfile?.fullName || currentUser?.displayName || '';
+  const firstName = fullName.trim().split(' ')[0] || 'طالب';
 
   const getGradeName = () => {
-    if (selectedGrade === 'grade-1') return 'الصف الأول الثانوي';
-    if (selectedGrade === 'grade-2') return 'الصف الثاني الثانوي';
-    return 'الصف الثاني الثانوي';
+    const g = userProfile?.grade || selectedGrade;
+    if (g === 'grade-1') return 'الصف الأول الثانوي';
+    if (g === 'grade-2') return 'الصف الثاني الثانوي';
+    if (g === 'grade-3') return 'الصف الثالث الثانوي';
+    return null;
   };
 
   const getPathName = () => {
+    const p = userProfile?.path || selectedPath;
     const map = {
       medicine: 'مسار الطب وعلوم الحياة',
       engineering: 'مسار الهندسة وعلوم الحاسب',
       arts: 'مسار الآداب والفنون',
       business: 'مسار إدارة الأعمال',
     };
-    return map[selectedPath] || 'مسار الطب وعلوم الحياة';
+    return map[p] || null;
   };
+
+  const getSpecializationName = () => userProfile?.specialization || selectedSpecialization || null;
 
   return (
     <div className="dash-home-container">
@@ -90,16 +99,16 @@ export default function DashboardOverview() {
             <Sparkles size={16} />
             <span>لوحة التحكم الشخصية</span>
           </div>
-          <h1 className="dash-welcome-title">مرحبًا، أحمد 👋</h1>
+          <h1 className="dash-welcome-title">مرحبًا، {firstName} 👋</h1>
           <p className="dash-welcome-subtitle">
             استكمل رحلتك التعليمية اليوم وحقق أهدافك بخطوات مدروسة واحترافية.
           </p>
 
           <div className="dash-welcome-chips">
-            <span className="dash-chip-item">{getGradeName()}</span>
-            <span className="dash-chip-item path">{getPathName()}</span>
-            {selectedSpecialization && (
-              <span className="dash-chip-item spec">{selectedSpecialization}</span>
+            {getGradeName() && <span className="dash-chip-item">{getGradeName()}</span>}
+            {getPathName()  && <span className="dash-chip-item path">{getPathName()}</span>}
+            {getSpecializationName() && (
+              <span className="dash-chip-item spec">{getSpecializationName()}</span>
             )}
           </div>
         </div>

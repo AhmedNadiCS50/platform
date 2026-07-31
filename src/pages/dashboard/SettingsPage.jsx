@@ -8,17 +8,21 @@ import {
 import './SettingsPage.css';
 
 export default function SettingsPage() {
-  const { selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+  const { currentUser, userProfile, selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+
+  // Resolve from Firestore or Auth
+  const resolvedName  = userProfile?.fullName || currentUser?.displayName || '';
+  const resolvedEmail = userProfile?.email    || currentUser?.email       || '';
 
   // Active tab state: 'account' | 'interface' | 'notifications' | 'language' | 'security' | 'password'
   const [activeTab, setActiveTab] = useState('account');
 
-  // Form States
+  // Form States — seeded from Firestore on mount
   const [accountInfo, setAccountInfo] = useState({
-    name: 'أحمد محمد علي',
-    email: 'ahmed.nadi@vision.edu.sa',
-    phone: '+966 50 123 4567',
-    bio: 'طالب في مرحلة الثانوية العامة يسعى للتفوق والالتحاق بكلية الطب.',
+    name:  resolvedName,
+    email: resolvedEmail,
+    phone: '',
+    bio:   '',
   });
 
   const [interfaceSettings, setInterfaceSettings] = useState({

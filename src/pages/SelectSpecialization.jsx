@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import LogoSvg from '../components/LogoSvg';
 import { useUserSession } from '../context/UserSessionContext';
 import { SPECIALIZATIONS_CONFIG } from '../config/specializations';
+import { saveOnboardingData } from '../services/firestoreService';
 
 export default function SelectSpecialization() {
   const navigate = useNavigate();
-  const { selectedPath, selectedSpecialization, setSelectedSpecialization } = useUserSession();
+  const { currentUser, selectedPath, selectedGrade, selectedSpecialization, setSelectedSpecialization } = useUserSession();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   // Redirect if user landed here without choosing a path
   useEffect(() => {
@@ -16,9 +19,24 @@ export default function SelectSpecialization() {
 
   const config = SPECIALIZATIONS_CONFIG[selectedPath] ?? null;
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedSpecialization) return;
-    navigate('/dashboard');
+    setSaving(true);
+    setError('');
+    try {
+      if (currentUser) {
+        await saveOnboardingData(currentUser.uid, {
+          grade: selectedGrade,
+          path: selectedPath,
+          specialization: selectedSpecialization,
+        });
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Failed to save onboarding data:', err);
+      setError('حدث خطأ أثناء حفظ البيانات. يرجى المحاولة مرة أخرى.');
+      setSaving(false);
+    }
   };
 
   if (!config) return null;
@@ -143,15 +161,45 @@ export default function SelectSpecialization() {
           </div>
         )}
 
+        {/* Firestore save error */}
+        {error && (
+          <div
+            style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              color: '#fca5a5',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              direction: 'rtl',
+            }}
+          >
+            <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Continue */}
         <button
           type="button"
-          className={`btn-primary grade-continue-btn ${!selectedSpecialization ? 'disabled' : ''}`}
+          className={`btn-primary grade-continue-btn ${(!selectedSpecialization || saving) ? 'disabled' : ''}`}
           onClick={handleContinue}
-          disabled={!selectedSpecialization}
+          disabled={!selectedSpecialization || saving}
         >
-          <span>متابعة</span>
-          <ArrowLeft size={18} />
+          {saving ? (
+            <>
+              <Loader2 size={18} className="spin-icon" />
+              <span>جاري الحفظ...</span>
+            </>
+          ) : (
+            <>
+              <span>متابعة</span>
+              <ArrowLeft size={18} />
+            </>
+          )}
         </button>
 
       </div>

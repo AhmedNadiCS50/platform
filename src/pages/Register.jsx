@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import LogoSvg from '../components/LogoSvg';
+import { registerWithEmailPassword, getArabicAuthErrorMessage } from '../services/authService';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,16 +26,39 @@ export default function Register() {
     if (name === 'confirmPassword' || name === 'password') {
       setPasswordMismatch(false);
     }
+    if (errorMessage) setErrorMessage('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      setPasswordMismatch(true);
+    if (!form.fullName || !form.email || !form.password || !form.confirmPassword) {
+      setErrorMessage('يرجى ملء جميع الحقول المطلوبة.');
       return;
     }
-    // No backend — navigate directly on "success"
-    navigate('/select-grade');
+
+    if (form.password !== form.confirmPassword) {
+      setPasswordMismatch(true);
+      setErrorMessage('كلمتا المرور غير متطابقتين.');
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setErrorMessage('كلمة المرور يجب أن لا تقل عن 6 أحرف.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      await registerWithEmailPassword(form.email, form.password, form.fullName);
+      navigate('/select-grade');
+    } catch (error) {
+      const arabicMsg = getArabicAuthErrorMessage(error.code);
+      setErrorMessage(arabicMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Password strength indicator
@@ -78,6 +104,28 @@ export default function Register() {
             <p className="login-desc">أنشئ حسابك وابدأ رحلتك التعليمية الآن.</p>
           </div>
 
+          {/* Error Message Banner */}
+          {errorMessage && (
+            <div
+              className="reg-error-msg"
+              style={{
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: '#fca5a5',
+                padding: '0.8rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '1.2rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                fontSize: '0.9rem',
+              }}
+            >
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* Form */}
           <form className="login-form" onSubmit={handleSubmit} noValidate>
 
@@ -100,6 +148,7 @@ export default function Register() {
                   style={{ textAlign: 'right', direction: 'rtl' }}
                   value={form.fullName}
                   onChange={handleChange}
+                  disabled={loading}
                   required
                 />
               </div>
@@ -123,6 +172,7 @@ export default function Register() {
                   className="login-input"
                   value={form.email}
                   onChange={handleChange}
+                  disabled={loading}
                   required
                 />
               </div>
@@ -146,6 +196,7 @@ export default function Register() {
                   className="login-input"
                   value={form.password}
                   onChange={handleChange}
+                  disabled={loading}
                   required
                 />
                 <button
@@ -153,6 +204,7 @@ export default function Register() {
                   className="login-eye-btn"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  disabled={loading}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -202,6 +254,7 @@ export default function Register() {
                   className={`login-input ${passwordMismatch ? 'reg-input-error' : ''}`}
                   value={form.confirmPassword}
                   onChange={handleChange}
+                  disabled={loading}
                   required
                 />
                 <button
@@ -209,19 +262,31 @@ export default function Register() {
                   className="login-eye-btn"
                   onClick={() => setShowConfirm((v) => !v)}
                   aria-label={showConfirm ? 'إخفاء كلمة التأكيد' : 'إظهار كلمة التأكيد'}
+                  disabled={loading}
                 >
                   {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {passwordMismatch && (
-                <p className="reg-error-msg">⚠️ كلمتا المرور غير متطابقتين.</p>
-              )}
             </div>
 
             {/* Submit */}
-            <button type="submit" className="btn-primary login-submit-btn" style={{ marginTop: '0.6rem' }}>
-              <span>إنشاء الحساب</span>
-              <Sparkles size={18} />
+            <button
+              type="submit"
+              className="btn-primary login-submit-btn"
+              style={{ marginTop: '0.6rem' }}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="spin-icon" />
+                  <span>جاري إنشاء الحساب...</span>
+                </>
+              ) : (
+                <>
+                  <span>إنشاء الحساب</span>
+                  <Sparkles size={18} />
+                </>
+              )}
             </button>
 
           </form>

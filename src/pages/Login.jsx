@@ -1,20 +1,41 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Zap } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, Zap, AlertCircle, Loader2 } from 'lucide-react';
 import LogoSvg from '../components/LogoSvg';
+import { loginWithEmailPassword, getArabicAuthErrorMessage } from '../services/authService';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    if (errorMessage) setErrorMessage('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // No backend — UI only
+    if (!form.email || !form.password) {
+      setErrorMessage('يرجى ملء جميع الحقول المطلوبة.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      await loginWithEmailPassword(form.email, form.password);
+      navigate('/dashboard');
+    } catch (error) {
+      const arabicMsg = getArabicAuthErrorMessage(error.code);
+      setErrorMessage(arabicMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,6 +66,28 @@ export default function Login() {
             <p className="login-desc">سجل دخولك لمتابعة رحلتك التعليمية.</p>
           </div>
 
+          {/* Error Message Banner */}
+          {errorMessage && (
+            <div
+              className="reg-error-msg"
+              style={{
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                color: '#fca5a5',
+                padding: '0.8rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '1.2rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                fontSize: '0.9rem',
+              }}
+            >
+              <AlertCircle size={18} style={{ flexShrink: 0 }} />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {/* Form */}
           <form className="login-form" onSubmit={handleSubmit} noValidate>
 
@@ -66,6 +109,7 @@ export default function Login() {
                   className="login-input"
                   value={form.email}
                   onChange={handleChange}
+                  disabled={loading}
                   required
                 />
               </div>
@@ -94,6 +138,7 @@ export default function Login() {
                   className="login-input"
                   value={form.password}
                   onChange={handleChange}
+                  disabled={loading}
                   required
                 />
                 <button
@@ -101,6 +146,7 @@ export default function Login() {
                   className="login-eye-btn"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  disabled={loading}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -116,6 +162,7 @@ export default function Login() {
                   className="login-checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading}
                 />
                 <span className="login-checkbox-custom" />
                 <span>تذكرني</span>
@@ -123,9 +170,22 @@ export default function Login() {
             </div>
 
             {/* Submit */}
-            <button type="submit" className="btn-primary login-submit-btn">
-              <span>تسجيل الدخول</span>
-              <Zap size={18} />
+            <button
+              type="submit"
+              className="btn-primary login-submit-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="spin-icon" />
+                  <span>جاري تسجيل الدخول...</span>
+                </>
+              ) : (
+                <>
+                  <span>تسجيل الدخول</span>
+                  <Zap size={18} />
+                </>
+              )}
             </button>
 
           </form>
