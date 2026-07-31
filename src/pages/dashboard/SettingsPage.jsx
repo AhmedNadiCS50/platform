@@ -1,30 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUserSession } from '../../context/UserSessionContext';
 import { updateUserDocument } from '../../services/firestoreService';
+import { updateUserPassword, getArabicAuthErrorMessage } from '../../services/authService';
 import {
   User, Mail, Phone, Lock, Bell, Palette, Globe, ShieldCheck,
   Save, Check, Laptop, Smartphone, KeyRound, CheckCircle2,
-  Sliders, Eye, EyeOff, AlertCircle, Sparkles, Moon, Sun, Monitor, Loader2
+  Sliders, Eye, EyeOff, Sparkles, Moon, Sun, Monitor, Loader2
 } from 'lucide-react';
 import './SettingsPage.css';
 
-export default function SettingsPage() {
-  const { currentUser, userProfile, selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
+const GRADE_LABELS = {
+  'grade-1': 'الصف الأول الثانوي',
+  'grade-2': 'الصف الثاني الثانوي',
+  'grade-3': 'الصف الثالث الثانوي',
+};
 
-  // Resolve from Firestore or Auth
+const PATH_LABELS = {
+  medicine: 'مسار الطب والعلوم الصحية',
+  engineering: 'مسار الهندسة والتكنولوجيا',
+  arts: 'مسار الإنسانيات والفنون',
+  business: 'مسار إدارة الأعمال والاقتصاد',
+};
+
+export default function SettingsPage() {
+  const { currentUser, userProfile, selectedGrade, selectedPath } = useUserSession();
+
+  // Resolve from Firestore
   const resolvedName  = userProfile?.fullName || currentUser?.displayName || '';
   const resolvedEmail = userProfile?.email    || currentUser?.email       || '';
+  const resolvedGrade = userProfile?.grade    || selectedGrade;
+  const resolvedPath  = userProfile?.path     || selectedPath;
 
-  // Active tab state: 'account' | 'interface' | 'notifications' | 'language' | 'security' | 'password'
+  // Active tab state
   const [activeTab, setActiveTab] = useState('account');
 
-  // Form States — seeded from Firestore on mount
+  // Form States — seeded from Firestore profile
   const [accountInfo, setAccountInfo] = useState({
     name:  resolvedName,
     email: resolvedEmail,
-    phone: userProfile?.phone || '',
-    bio:   userProfile?.bio   || '',
+    phone: '',
+    bio:   '',
   });
+
+  // Sync accountInfo when Firestore profile loads asynchronously
+  useEffect(() => {
+    if (userProfile) {
+      setAccountInfo({
+        name:  userProfile.fullName || currentUser?.displayName || '',
+        email: userProfile.email    || currentUser?.email       || '',
+        phone: userProfile.phone    || '',
+        bio:   userProfile.bio      || '',
+      });
+    }
+  }, [userProfile, currentUser]);
 
   const [interfaceSettings, setInterfaceSettings] = useState({
     accentColor: 'emerald',
@@ -47,7 +75,7 @@ export default function SettingsPage() {
   });
 
   const [securitySettings, setSecuritySettings] = useState({
-    twoFactor: true,
+    twoFactor: false,
     privateLeaderboard: false,
   });
 
@@ -57,32 +85,40 @@ export default function SettingsPage() {
     confirmPassword: '',
   });
 
-  const [showPass, setShowPass] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMsg, setToastMsg] = useState('تم حفظ التغييرات بنجاح! ✨');
-  const [saving, setSaving] = useState(false);
+  const [showPass, setShowPass]       = useState(false);
+  const [showToast, setShowToast]     = useState(false);
+  const [toastMsg, setToastMsg]       = useState('');
+  const [toastType, setToastType]     = useState('success'); // 'success' | 'error'
+  const [saving, setSaving]           = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
-  const handleGlobalSave = async (msg = 'تم حفظ التغييرات بنجاح في Firestore! ✨') => {
-    if (currentUser?.uid) {
-      setSaving(true);
-      try {
-        await updateUserDocument(currentUser.uid, {
-          fullName: accountInfo.name,
-          phone: accountInfo.phone,
-          bio: accountInfo.bio,
-        });
-      } catch (err) {
-        console.error('Error saving settings to Firestore:', err);
-      } finally {
-        setSaving(false);
-      }
-    }
+  const triggerToast = (msg, type = 'success') => {
     setToastMsg(msg);
+    setToastType(type);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    setTimeout(() => setShowToast(false), 3500);
   };
 
-  // Password strength calculation
+  const handleGlobalSave = async () => {
+    if (!currentUser?.uid) return;
+    setSaving(true);
+    try {
+      await updateUserDocument(currentUser.uid, {
+        fullName: accountInfo.name.trim(),
+        phone: accountInfo.phone.trim(),
+        bio: accountInfo.bio.trim(),
+      });
+      triggerToast('تم حفظ التغييرات بنجاح في Firestore! ✨');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      triggerToast('حدث خطأ أثناء الحفظ. يرجى المحاولة مجدداً.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Password strength
   const getPasswordStrength = (pass) => {
     if (!pass) return '';
     if (pass.length < 6) return 'weak';
@@ -92,15 +128,39 @@ export default function SettingsPage() {
 
   const passStrength = getPasswordStrength(passwordForm.newPassword);
 
-  const handlePasswordSave = (e) => {
+  const handlePasswordSave = async (e) => {
     e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('كلمة المرور الجديدة غير متطابقة مع التأكيد');
+    setPasswordError('');
+
+    if (!passwordForm.currentPassword) {
+      setPasswordError('يرجى إدخال كلمة المرور الحالية.');
       return;
     }
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    triggerSaveToast('تم تحديث كلمة المرور بنجاح! 🔑');
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('يجب أن تكون كلمة المرور الجديدة 6 أحرف على الأقل.');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('كلمة المرور الجديدة غير متطابقة مع تأكيدها.');
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      await updateUserPassword(passwordForm.currentPassword, passwordForm.newPassword);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      triggerToast('تم تحديث كلمة المرور بنجاح! 🔑');
+    } catch (err) {
+      const arabicMsg = getArabicAuthErrorMessage(err.code);
+      setPasswordError(arabicMsg);
+    } finally {
+      setSavingPassword(false);
+    }
   };
+
+  // Grade + Path display
+  const gradeDisplay = GRADE_LABELS[resolvedGrade] || '—';
+  const pathDisplay  = PATH_LABELS[resolvedPath]   || '—';
 
   return (
     <div className="settings-page-container">
@@ -114,7 +174,7 @@ export default function SettingsPage() {
         <button
           type="button"
           className="btn-save-settings"
-          onClick={() => handleGlobalSave()}
+          onClick={handleGlobalSave}
           disabled={saving}
         >
           {saving ? <Loader2 size={18} className="spin-icon" /> : <Save size={18} />}
@@ -126,66 +186,30 @@ export default function SettingsPage() {
       <div className="settings-layout-grid">
         {/* Sidebar Nav */}
         <aside className="settings-nav-card">
-          <button
-            type="button"
-            className={`settings-tab-btn ${activeTab === 'account' ? 'active' : ''}`}
-            onClick={() => setActiveTab('account')}
-          >
-            <User size={18} className="settings-tab-icon" />
-            <span>معلومات الحساب</span>
-          </button>
-
-          <button
-            type="button"
-            className={`settings-tab-btn ${activeTab === 'interface' ? 'active' : ''}`}
-            onClick={() => setActiveTab('interface')}
-          >
-            <Palette size={18} className="settings-tab-icon" />
-            <span>إعدادات الواجهة</span>
-          </button>
-
-          <button
-            type="button"
-            className={`settings-tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notifications')}
-          >
-            <Bell size={18} className="settings-tab-icon" />
-            <span>التنبيهات والإشعارات</span>
-          </button>
-
-          <button
-            type="button"
-            className={`settings-tab-btn ${activeTab === 'language' ? 'active' : ''}`}
-            onClick={() => setActiveTab('language')}
-          >
-            <Globe size={18} className="settings-tab-icon" />
-            <span>اللغة والمنطقة</span>
-          </button>
-
-          <button
-            type="button"
-            className={`settings-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => setActiveTab('security')}
-          >
-            <ShieldCheck size={18} className="settings-tab-icon" />
-            <span>الأمان والخصوصية</span>
-          </button>
-
-          <button
-            type="button"
-            className={`settings-tab-btn ${activeTab === 'password' ? 'active' : ''}`}
-            onClick={() => setActiveTab('password')}
-          >
-            <KeyRound size={18} className="settings-tab-icon" />
-            <span>تغيير كلمة المرور</span>
-          </button>
+          {[
+            { key: 'account',       label: 'معلومات الحساب',          Icon: User },
+            { key: 'interface',     label: 'إعدادات الواجهة',          Icon: Palette },
+            { key: 'notifications', label: 'التنبيهات والإشعارات',    Icon: Bell },
+            { key: 'language',      label: 'اللغة والمنطقة',           Icon: Globe },
+            { key: 'security',      label: 'الأمان والخصوصية',         Icon: ShieldCheck },
+            { key: 'password',      label: 'تغيير كلمة المرور',        Icon: KeyRound },
+          ].map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              type="button"
+              className={`settings-tab-btn ${activeTab === key ? 'active' : ''}`}
+              onClick={() => setActiveTab(key)}
+            >
+              <Icon size={18} className="settings-tab-icon" />
+              <span>{label}</span>
+            </button>
+          ))}
         </aside>
 
         {/* Content Area */}
         <main className="settings-content-card">
-          {/* ════════════════════════════════════════════════════════════════
-             TAB 1: ACCOUNT INFORMATION (معلومات الحساب)
-          ════════════════════════════════════════════════════════════════ */}
+
+          {/* ══════════ TAB 1: ACCOUNT INFORMATION ══════════ */}
           {activeTab === 'account' && (
             <>
               <div className="settings-panel-header">
@@ -193,7 +217,7 @@ export default function SettingsPage() {
                   <User size={22} />
                   معلومات الحساب والبيانات الشخصية
                 </h2>
-                <p className="settings-panel-desc">تعديل الاسم والبريد الإلكتروني ورقم الهاتف المسجل بلمسة واحدة</p>
+                <p className="settings-panel-desc">تعديل الاسم ورقم الهاتف المسجل — يُحفظ مباشرةً في Firestore</p>
               </div>
 
               <form className="settings-form-grid" onSubmit={(e) => e.preventDefault()}>
@@ -204,6 +228,7 @@ export default function SettingsPage() {
                     className="settings-input"
                     value={accountInfo.name}
                     onChange={(e) => setAccountInfo({ ...accountInfo, name: e.target.value })}
+                    placeholder="أدخل اسمك الكامل"
                   />
                 </div>
 
@@ -213,8 +238,13 @@ export default function SettingsPage() {
                     type="email"
                     className="settings-input"
                     value={accountInfo.email}
-                    onChange={(e) => setAccountInfo({ ...accountInfo, email: e.target.value })}
+                    disabled
+                    style={{ opacity: 0.6 }}
+                    title="لا يمكن تغيير البريد الإلكتروني من هنا"
                   />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', marginTop: '0.3rem', display: 'block' }}>
+                    البريد الإلكتروني ثابت ولا يمكن تعديله.
+                  </span>
                 </div>
 
                 <div className="settings-form-group">
@@ -224,6 +254,7 @@ export default function SettingsPage() {
                     className="settings-input"
                     value={accountInfo.phone}
                     onChange={(e) => setAccountInfo({ ...accountInfo, phone: e.target.value })}
+                    placeholder="مثال: 0501234567"
                   />
                 </div>
 
@@ -233,8 +264,13 @@ export default function SettingsPage() {
                     type="text"
                     className="settings-input"
                     disabled
-                    value={`${selectedGrade === 'grade-1' ? 'الصف الأول الثانوي' : 'الصف الثاني الثانوي'} - مسار الطب`}
+                    value={`${gradeDisplay} — ${pathDisplay}`}
+                    style={{ opacity: 0.6 }}
+                    title="يمكن تغيير المسار والصف من خلال الملف الشخصي"
                   />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', marginTop: '0.3rem', display: 'block' }}>
+                    لتغيير الصف أو المسار، انتقل إلى الملف الشخصي.
+                  </span>
                 </div>
 
                 <div className="settings-form-group full-width">
@@ -244,15 +280,14 @@ export default function SettingsPage() {
                     rows={3}
                     value={accountInfo.bio}
                     onChange={(e) => setAccountInfo({ ...accountInfo, bio: e.target.value })}
+                    placeholder="اكتب نبذة قصيرة عن نفسك..."
                   />
                 </div>
               </form>
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════════
-             TAB 2: INTERFACE SETTINGS (إعدادات الواجهة والأنماط)
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════ TAB 2: INTERFACE SETTINGS ══════════ */}
           {activeTab === 'interface' && (
             <>
               <div className="settings-panel-header">
@@ -263,7 +298,6 @@ export default function SettingsPage() {
                 <p className="settings-panel-desc">تخصيص ألوان الإضاءة النيونية، نمط الخلفية وحجم الخطوط</p>
               </div>
 
-              {/* Color Accent Picker */}
               <div className="settings-form-group full-width">
                 <label className="settings-label">لون الإضاءة الرئيسي (Neon Accent)</label>
                 <div className="theme-colors-grid">
@@ -275,9 +309,7 @@ export default function SettingsPage() {
                   ].map((item) => (
                     <div
                       key={item.id}
-                      className={`color-option-card ${
-                        interfaceSettings.accentColor === item.id ? 'selected' : ''
-                      }`}
+                      className={`color-option-card ${interfaceSettings.accentColor === item.id ? 'selected' : ''}`}
                       onClick={() => setInterfaceSettings({ ...interfaceSettings, accentColor: item.id })}
                     >
                       <div className="color-swatch-circle" style={{ color: item.color, backgroundColor: item.color }} />
@@ -287,43 +319,26 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Theme Mode */}
               <div className="settings-form-group full-width">
                 <label className="settings-label">نمط المظهر الداكن</label>
                 <div className="theme-colors-grid">
-                  <div
-                    className={`color-option-card ${
-                      interfaceSettings.themeMode === 'ultra-dark' ? 'selected' : ''
-                    }`}
-                    onClick={() => setInterfaceSettings({ ...interfaceSettings, themeMode: 'ultra-dark' })}
-                  >
-                    <Moon size={24} style={{ color: 'var(--green-neon)' }} />
-                    <span className="color-swatch-name">الداكن الخارق (Vision)</span>
-                  </div>
-
-                  <div
-                    className={`color-option-card ${
-                      interfaceSettings.themeMode === 'soft-slate' ? 'selected' : ''
-                    }`}
-                    onClick={() => setInterfaceSettings({ ...interfaceSettings, themeMode: 'soft-slate' })}
-                  >
-                    <Monitor size={24} style={{ color: '#38bdf8' }} />
-                    <span className="color-swatch-name">الداكن المعتدل</span>
-                  </div>
-
-                  <div
-                    className={`color-option-card ${
-                      interfaceSettings.themeMode === 'system' ? 'selected' : ''
-                    }`}
-                    onClick={() => setInterfaceSettings({ ...interfaceSettings, themeMode: 'system' })}
-                  >
-                    <Sun size={24} style={{ color: '#fbbf24' }} />
-                    <span className="color-swatch-name">تلقائي حسب النظام</span>
-                  </div>
+                  {[
+                    { id: 'ultra-dark', label: 'الداكن الخارق (Vision)', Icon: Moon, color: 'var(--green-neon)' },
+                    { id: 'soft-slate', label: 'الداكن المعتدل', Icon: Monitor, color: '#38bdf8' },
+                    { id: 'system', label: 'تلقائي حسب النظام', Icon: Sun, color: '#fbbf24' },
+                  ].map(({ id, label, Icon, color }) => (
+                    <div
+                      key={id}
+                      className={`color-option-card ${interfaceSettings.themeMode === id ? 'selected' : ''}`}
+                      onClick={() => setInterfaceSettings({ ...interfaceSettings, themeMode: id })}
+                    >
+                      <Icon size={24} style={{ color }} />
+                      <span className="color-swatch-name">{label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Font Size & Motion */}
               <div className="settings-form-grid">
                 <div className="settings-form-group">
                   <label className="settings-label">حجم خط الواجهة</label>
@@ -333,7 +348,7 @@ export default function SettingsPage() {
                     onChange={(e) => setInterfaceSettings({ ...interfaceSettings, fontSize: e.target.value })}
                   >
                     <option value="normal">عادي (15px)</option>
-                    <option value="medium">متوسط (16px) - الموصى به</option>
+                    <option value="medium">متوسط (16px) — الموصى به</option>
                     <option value="large">كبير (18px)</option>
                   </select>
                 </div>
@@ -341,9 +356,7 @@ export default function SettingsPage() {
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════════
-             TAB 3: NOTIFICATIONS (الإشعارات والتنبيهات)
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════ TAB 3: NOTIFICATIONS ══════════ */}
           {activeTab === 'notifications' && (
             <>
               <div className="settings-panel-header">
@@ -351,84 +364,36 @@ export default function SettingsPage() {
                   <Bell size={22} />
                   إعدادات التنبيهات والإشعارات
                 </h2>
-                <p className="settings-panel-desc">تحكم في الرسائل والإشعارات الفورية التي تصلك عبر البريد والمتصفح</p>
+                <p className="settings-panel-desc">تحكم في الرسائل والإشعارات التي تصلك</p>
               </div>
 
               <div className="settings-toggle-list">
-                <div className="settings-toggle-item">
-                  <div className="toggle-info">
-                    <span className="toggle-title">تنبيهات البريد الإلكتروني</span>
-                    <span className="toggle-desc">إرسال ملخصات الدروس والاختبارات الجديدة مباشرة إلى بريدك</span>
+                {[
+                  { key: 'emailAlerts',    title: 'تنبيهات البريد الإلكتروني',      desc: 'إرسال ملخصات الدروس والاختبارات الجديدة إلى بريدك' },
+                  { key: 'pushAlerts',     title: 'إشعارات المتصفح الفورية',         desc: 'تنبيهات فورية عند إضافة محتوى معتمد جديد' },
+                  { key: 'examReminders',  title: 'تذكير الاختبارات التقييمية',     desc: 'تنبيه تلقائي قبل موعد الاختبار بـ 24 ساعة' },
+                  { key: 'weeklyDigest',   title: 'تقرير الإنجاز الأسبوعي',         desc: 'تقرير تحليلي بنسبة تقدمك كل يوم جمعة' },
+                ].map(({ key, title, desc }) => (
+                  <div className="settings-toggle-item" key={key}>
+                    <div className="toggle-info">
+                      <span className="toggle-title">{title}</span>
+                      <span className="toggle-desc">{desc}</span>
+                    </div>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={notificationToggles[key]}
+                        onChange={(e) => setNotificationToggles({ ...notificationToggles, [key]: e.target.checked })}
+                      />
+                      <span className="slider" />
+                    </label>
                   </div>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={notificationToggles.emailAlerts}
-                      onChange={(e) =>
-                        setNotificationToggles({ ...notificationToggles, emailAlerts: e.target.checked })
-                      }
-                    />
-                    <span className="slider" />
-                  </label>
-                </div>
-
-                <div className="settings-toggle-item">
-                  <div className="toggle-info">
-                    <span className="toggle-title">إشعارات المتصفح الفورية</span>
-                    <span className="toggle-desc">عرض تنبيهات فورية عند إضافة موعد اختبار جديد أو محتوى معتمد</span>
-                  </div>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={notificationToggles.pushAlerts}
-                      onChange={(e) =>
-                        setNotificationToggles({ ...notificationToggles, pushAlerts: e.target.checked })
-                      }
-                    />
-                    <span className="slider" />
-                  </label>
-                </div>
-
-                <div className="settings-toggle-item">
-                  <div className="toggle-info">
-                    <span className="toggle-title">تذكير الاختبارات التقييمية</span>
-                    <span className="toggle-desc">تنبيه تلقائي قبل موعد تسليم الواجب أو بداية الاختبار بـ 24 ساعة</span>
-                  </div>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={notificationToggles.examReminders}
-                      onChange={(e) =>
-                        setNotificationToggles({ ...notificationToggles, examReminders: e.target.checked })
-                      }
-                    />
-                    <span className="slider" />
-                  </label>
-                </div>
-
-                <div className="settings-toggle-item">
-                  <div className="toggle-info">
-                    <span className="toggle-title">تقرير الإنجاز الأسبوعي</span>
-                    <span className="toggle-desc">إرسال تقرير تحليلي بنسبة تقدمك وسلسلة تعلمك كل يوم جمعة</span>
-                  </div>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={notificationToggles.weeklyDigest}
-                      onChange={(e) =>
-                        setNotificationToggles({ ...notificationToggles, weeklyDigest: e.target.checked })
-                      }
-                    />
-                    <span className="slider" />
-                  </label>
-                </div>
+                ))}
               </div>
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════════
-             TAB 4: LANGUAGE & REGION (اللغة والمنطقة)
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════ TAB 4: LANGUAGE & REGION ══════════ */}
           {activeTab === 'language' && (
             <>
               <div className="settings-panel-header">
@@ -436,7 +401,7 @@ export default function SettingsPage() {
                   <Globe size={22} />
                   إعدادات اللغة والمنطقة
                 </h2>
-                <p className="settings-panel-desc">اختر لغة المنصة المفضلة، نمط التقويم ونطاق التوقيت المحلي</p>
+                <p className="settings-panel-desc">اختر لغة المنصة المفضلة ونمط التقويم</p>
               </div>
 
               <div className="settings-form-group full-width">
@@ -449,7 +414,7 @@ export default function SettingsPage() {
                     <span className="lang-flag">🇸🇦</span>
                     <div>
                       <span className="lang-name">اللغة العربية</span>
-                      <span className="lang-sub">العربية (الافتراضية - RTL)</span>
+                      <span className="lang-sub">العربية (الافتراضية — RTL)</span>
                     </div>
                   </div>
 
@@ -474,7 +439,7 @@ export default function SettingsPage() {
                     value={languageSettings.calendar}
                     onChange={(e) => setLanguageSettings({ ...languageSettings, calendar: e.target.value })}
                   >
-                    <option value="hijri">التقويم الهجري الشمسي/المصري</option>
+                    <option value="hijri">التقويم الهجري</option>
                     <option value="gregorian">التقويم الميلادي</option>
                   </select>
                 </div>
@@ -486,15 +451,14 @@ export default function SettingsPage() {
                     className="settings-input"
                     disabled
                     value={languageSettings.timezone}
+                    style={{ opacity: 0.6 }}
                   />
                 </div>
               </div>
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════════
-             TAB 5: SECURITY & PRIVACY (الأمان والخصوصية)
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════ TAB 5: SECURITY & PRIVACY ══════════ */}
           {activeTab === 'security' && (
             <>
               <div className="settings-panel-header">
@@ -502,29 +466,26 @@ export default function SettingsPage() {
                   <ShieldCheck size={22} />
                   الأمان والخصوصية والجلسات النشطة
                 </h2>
-                <p className="settings-panel-desc">إدارة حماية الحساب، المصادقة الثنائية، والأجهزة المتصلة بحسابك</p>
+                <p className="settings-panel-desc">إدارة حماية الحساب والمصادقة الثنائية</p>
               </div>
 
               <div className="settings-toggle-list">
                 <div className="settings-toggle-item">
                   <div className="toggle-info">
                     <span className="toggle-title">المصادقة الثنائية (2FA) 🛡️</span>
-                    <span className="toggle-desc">إرسال رمز تحقق إضافي عبر هاتفك عند تسجيل الدخول من أجهزة جديدة</span>
+                    <span className="toggle-desc">طبقة حماية إضافية عند تسجيل الدخول من أجهزة جديدة</span>
                   </div>
                   <label className="switch">
                     <input
                       type="checkbox"
                       checked={securitySettings.twoFactor}
-                      onChange={(e) =>
-                        setSecuritySettings({ ...securitySettings, twoFactor: e.target.checked })
-                      }
+                      onChange={(e) => setSecuritySettings({ ...securitySettings, twoFactor: e.target.checked })}
                     />
                     <span className="slider" />
                   </label>
                 </div>
               </div>
 
-              {/* Active Sessions */}
               <div className="settings-form-group full-width" style={{ marginTop: '1rem' }}>
                 <label className="settings-label">الجلسات والأجهزة النشطة حالياً</label>
                 <div className="devices-list">
@@ -534,39 +495,18 @@ export default function SettingsPage() {
                         <Laptop size={20} />
                       </div>
                       <div>
-                        <span className="device-title">متصفح الويندوز (هذا الجهاز)</span>
-                        <span className="device-sub">القاهرة، مصر · متصل الآن</span>
+                        <span className="device-title">متصفح الويب (هذا الجهاز)</span>
+                        <span className="device-sub">متصل الآن · {currentUser?.email}</span>
                       </div>
                     </div>
                     <span style={{ fontSize: '0.8rem', color: 'var(--green-neon)', fontWeight: 'bold' }}>نشط حالياً</span>
-                  </div>
-
-                  <div className="device-item-card">
-                    <div className="device-left">
-                      <div className="device-icon-box" style={{ background: 'rgba(56, 189, 248, 0.12)', borderColor: 'rgba(56, 189, 248, 0.3)', color: '#38bdf8' }}>
-                        <Smartphone size={20} />
-                      </div>
-                      <div>
-                        <span className="device-title">تطبيق آيفون (iOS)</span>
-                        <span className="device-sub">تطبيق رؤية الذكي · منذ 3 ساعات</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-revoke-device"
-                      onClick={() => alert('تم تسجيل الخروج من الجهاز بنجاح')}
-                    >
-                      تسجيل خروج
-                    </button>
                   </div>
                 </div>
               </div>
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════════
-             TAB 6: CHANGE PASSWORD (تغيير كلمة المرور)
-          ════════════════════════════════════════════════════════════════ */}
+          {/* ══════════ TAB 6: CHANGE PASSWORD ══════════ */}
           {activeTab === 'password' && (
             <>
               <div className="settings-panel-header">
@@ -574,7 +514,7 @@ export default function SettingsPage() {
                   <KeyRound size={22} />
                   تغيير كلمة المرور
                 </h2>
-                <p className="settings-panel-desc">تحديث كلمة السر بانتظام لحماية حسابك وبياناتك الأكاديمية</p>
+                <p className="settings-panel-desc">تحديث كلمة السر — يتطلب إعادة المصادقة بكلمة المرور الحالية</p>
               </div>
 
               <form className="settings-form-grid" onSubmit={handlePasswordSave}>
@@ -586,23 +526,12 @@ export default function SettingsPage() {
                       className="settings-input"
                       placeholder="أدخل كلمة المرور الحالية"
                       value={passwordForm.currentPassword}
-                      onChange={(e) =>
-                        setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
-                      }
+                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                       required
                     />
                     <button
                       type="button"
-                      style={{
-                        position: 'absolute',
-                        left: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-subtle)',
-                        cursor: 'pointer',
-                      }}
+                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-subtle)', cursor: 'pointer' }}
                       onClick={() => setShowPass(!showPass)}
                     >
                       {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -615,7 +544,7 @@ export default function SettingsPage() {
                   <input
                     type={showPass ? 'text' : 'password'}
                     className="settings-input"
-                    placeholder="8 أرقام وحروف على الأقل"
+                    placeholder="8 أحرف وأرقام على الأقل"
                     value={passwordForm.newPassword}
                     onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                     required
@@ -639,29 +568,41 @@ export default function SettingsPage() {
                     className="settings-input"
                     placeholder="أعد إدخال كلمة المرور الجديدة"
                     value={passwordForm.confirmPassword}
-                    onChange={(e) =>
-                      setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                    }
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                     required
                   />
                 </div>
 
+                {passwordError && (
+                  <div className="settings-form-group full-width">
+                    <p style={{ color: '#ef4444', fontSize: '0.88rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '0.6rem 1rem' }}>
+                      ❌ {passwordError}
+                    </p>
+                  </div>
+                )}
+
                 <div className="settings-form-group full-width" style={{ marginTop: '0.8rem' }}>
-                  <button type="submit" className="btn-save-settings" style={{ alignSelf: 'flex-start' }}>
-                    <KeyRound size={18} />
-                    <span>تحديث كلمة المرور</span>
+                  <button
+                    type="submit"
+                    className="btn-save-settings"
+                    style={{ alignSelf: 'flex-start' }}
+                    disabled={savingPassword}
+                  >
+                    {savingPassword ? <Loader2 size={18} className="spin-icon" /> : <KeyRound size={18} />}
+                    <span>{savingPassword ? 'جاري التحديث...' : 'تحديث كلمة المرور'}</span>
                   </button>
                 </div>
               </form>
             </>
           )}
+
         </main>
       </div>
 
       {/* ── Toast Confirmation ── */}
       {showToast && (
-        <div className="settings-saved-toast">
-          <CheckCircle2 size={22} style={{ color: 'var(--green-neon)' }} />
+        <div className={`settings-saved-toast ${toastType === 'error' ? 'error' : ''}`}>
+          <CheckCircle2 size={22} style={{ color: toastType === 'error' ? '#ef4444' : 'var(--green-neon)' }} />
           <span>{toastMsg}</span>
         </div>
       )}

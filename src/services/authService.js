@@ -5,6 +5,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  reauthenticateWithCredential,
+  updatePassword,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { createUserDocument } from './firestoreService';
@@ -105,4 +108,17 @@ export async function resendVerificationEmail(user = auth.currentUser) {
  */
 export async function logoutUser() {
   await signOut(auth);
+}
+
+/**
+ * Change password — re-authenticates with current password first, then updates.
+ * @param {string} currentPassword - User's current password for re-auth
+ * @param {string} newPassword - The new password to set
+ */
+export async function updateUserPassword(currentPassword, newPassword) {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error('لا يوجد مستخدم نشط.');
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
 }
