@@ -1,41 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '../../context/UserSessionContext';
-import { getSubjectsByPath } from '../../services/contentService';
-import { BookOpen, ChevronLeft, Search, Layers, Loader2, AlertCircle } from 'lucide-react';
+import { useSubjects } from '../../hooks/useSubjects';
+import {
+  BookOpen, Globe, Calculator, Atom, Zap, ScrollText, Brain, Code2,
+  FlaskConical, ChevronLeft, Search, Layers, Loader2, AlertCircle
+} from 'lucide-react';
+
+const ICON_MAP = {
+  BookOpen, Globe, Calculator, Atom, Zap, ScrollText, Brain, Code2, FlaskConical,
+};
 
 export default function SubjectsPage() {
   const navigate = useNavigate();
-  const { userProfile, selectedPath } = useUserSession();
-  const [subjectsList, setSubjectsList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { userProfile, selectedGrade, selectedPath } = useUserSession();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Strict path determination from user's Firestore profile
-  const activePathKey = userProfile?.path || selectedPath;
+  // Resolved grade & path from Firestore profile or local session
+  const activeGradeKey = userProfile?.grade || selectedGrade || 'grade-1';
+  const activePathKey  = userProfile?.path  || selectedPath  || 'medicine';
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadSubjects() {
-      if (!activePathKey) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      const data = await getSubjectsByPath(activePathKey);
-      if (isMounted) {
-        setSubjectsList(data);
-        setLoading(false);
-      }
-    }
-    loadSubjects();
-    return () => { isMounted = false; };
-  }, [activePathKey]);
+  const { subjects, loading } = useSubjects(activeGradeKey, activePathKey);
 
-  const filteredSubjects = subjectsList.filter((sub) =>
-    sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubjects = subjects.filter((sub) => {
+    const titleStr = sub.name || sub.title || '';
+    const descStr  = sub.description || '';
+    const term     = searchTerm.toLowerCase();
+    return titleStr.toLowerCase().includes(term) || descStr.toLowerCase().includes(term);
+  });
 
   const getPathLabel = () => {
     const map = {
@@ -116,19 +108,28 @@ export default function SubjectsPage() {
       ) : (
         <div className="subjects-grid">
           {filteredSubjects.map((subject) => {
-            const Icon = subject.icon || BookOpen;
+            const Icon = typeof subject.icon === 'string'
+              ? (ICON_MAP[subject.icon] || BookOpen)
+              : (subject.icon || BookOpen);
+
+            const subjectProgress = userProfile?.progress?.[subject.id] || subject.progress || 0;
+            const subjectTitle = subject.name || subject.title;
+            const cardColor = subject.color || '#00e676';
+            const cardGlow = subject.glow || 'rgba(0, 230, 118, 0.3)';
+            const cardAccent = subject.accent || 'rgba(0, 230, 118, 0.1)';
+
             return (
               <div
                 key={subject.id}
                 className="subject-card"
                 style={{
-                  '--card-color': subject.color,
-                  '--card-glow': subject.glow,
-                  '--card-accent': subject.accent,
+                  '--card-color': cardColor,
+                  '--card-glow': cardGlow,
+                  '--card-accent': cardAccent,
                 }}
               >
                 {/* Top Accent Strip */}
-                <div className="card-top-strip" style={{ background: subject.color }} />
+                <div className="card-top-strip" style={{ background: cardColor }} />
 
                 {/* Card Header: Icon + Badge */}
                 <div className="subject-card-header">
@@ -142,7 +143,7 @@ export default function SubjectsPage() {
 
                 {/* Subject Info */}
                 <div className="subject-card-body">
-                  <h3 className="subject-name">{subject.title}</h3>
+                  <h3 className="subject-name">{subjectTitle}</h3>
                   <p className="subject-desc">{subject.description}</p>
                 </div>
 
@@ -150,15 +151,15 @@ export default function SubjectsPage() {
                 <div className="subject-progress-section">
                   <div className="progress-info-row">
                     <span className="progress-label">نسبة الإنجاز</span>
-                    <span className="progress-value">{subject.progress || 0}%</span>
+                    <span className="progress-value">{subjectProgress}%</span>
                   </div>
                   <div className="progress-track-bg">
                     <div
                       className="progress-fill-bar"
                       style={{
-                        width: `${subject.progress || 0}%`,
-                        background: subject.color,
-                        boxShadow: `0 0 10px ${subject.color}`,
+                        width: `${subjectProgress}%`,
+                        background: cardColor,
+                        boxShadow: `0 0 10px ${cardColor}`,
                       }}
                     />
                   </div>

@@ -16,6 +16,9 @@ export function UserSessionProvider({ children }) {
   const [selectedPath, setSelectedPath]                     = useState(null);
   const [selectedSpecialization, setSelectedSpecialization] = useState(null);
 
+  // Derived: true when the logged-in user has role === 'admin' in Firestore
+  const isAdmin = userProfile?.role === 'admin';
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -64,6 +67,7 @@ export function UserSessionProvider({ children }) {
         userProfile,
         loadingAuth,
         logout,
+        isAdmin,
         selectedGrade,
         setSelectedGrade,
         selectedPath,

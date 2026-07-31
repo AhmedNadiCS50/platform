@@ -28,6 +28,7 @@ import LessonPage from './pages/dashboard/LessonPage';
 import QuizPage from './pages/dashboard/QuizPage';
 import ProfilePage from './pages/dashboard/ProfilePage';
 import SettingsPage from './pages/dashboard/SettingsPage';
+import AdminPage from './pages/admin/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function HomePage({ onOpenModal }) {
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/quiz/:id" element={<QuizPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/admin" element={<AdminPage />} />
 
           {/* Dashboard Layout & Nested Sub-routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>

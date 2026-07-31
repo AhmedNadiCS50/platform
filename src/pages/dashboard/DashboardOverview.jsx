@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserSession } from '../../context/UserSessionContext';
-import { getSubjectsByPath } from '../../services/contentService';
+import { useSubjects } from '../../hooks/useSubjects';
 import {
   Sparkles,
   Play,
@@ -14,37 +14,23 @@ import {
   TrendingUp,
   FileText,
   Loader2,
-  ArrowRight
 } from 'lucide-react';
 
 export default function DashboardOverview() {
   const navigate = useNavigate();
   const { currentUser, userProfile, selectedGrade, selectedPath, selectedSpecialization } = useUserSession();
-  const [userSubjects, setUserSubjects] = useState([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(true);
 
-  const activePathKey = userProfile?.path || selectedPath || 'medicine';
+  const activeGradeKey = userProfile?.grade || selectedGrade || 'grade-1';
+  const activePathKey  = userProfile?.path  || selectedPath  || 'medicine';
 
-  useEffect(() => {
-    let isMounted = true;
-    async function loadSubjects() {
-      setLoadingSubjects(true);
-      const subjects = await getSubjectsByPath(activePathKey);
-      if (isMounted) {
-        setUserSubjects(subjects);
-        setLoadingSubjects(false);
-      }
-    }
-    loadSubjects();
-    return () => { isMounted = false; };
-  }, [activePathKey]);
+  const { subjects: userSubjects, loading: loadingSubjects } = useSubjects(activeGradeKey, activePathKey);
 
   // Resolve first name
   const fullName = userProfile?.fullName || currentUser?.displayName || '';
   const firstName = fullName.trim().split(' ')[0] || 'طالب';
 
   const getGradeName = () => {
-    const g = userProfile?.grade || selectedGrade;
+    const g = activeGradeKey;
     if (g === 'grade-1') return 'الصف الأول الثانوي';
     if (g === 'grade-2') return 'الصف الثاني الثانوي';
     if (g === 'grade-3') return 'الصف الثالث الثانوي';
@@ -52,7 +38,7 @@ export default function DashboardOverview() {
   };
 
   const getPathName = () => {
-    const p = userProfile?.path || selectedPath;
+    const p = activePathKey;
     const map = {
       medicine: 'مسار الطب وعلوم الحياة',
       engineering: 'مسار الهندسة وعلوم الحاسب',
@@ -69,8 +55,8 @@ export default function DashboardOverview() {
   const completedQuizzesCount = userProfile?.completedQuizzes?.length || 0;
   const lastLesson = userProfile?.lastLesson || null;
 
-  // Calculate total lessons dynamically from subjects list
-  const totalLessonsCount = userSubjects.reduce((acc, sub) => acc + (sub.lessonsCount || 5), 0) || 15;
+  // Calculate total lessons dynamically from subjects list in Firestore
+  const totalLessonsCount = userSubjects.reduce((acc, sub) => acc + (sub.lessonsCount || 0), 0) || 1;
   const completionPercentage = Math.min(100, Math.round((completedLessonsCount / totalLessonsCount) * 100));
 
   // Recent real activities from Firestore (completed quizzes)
@@ -125,7 +111,7 @@ export default function DashboardOverview() {
             </div>
             {lastLesson && (
               <span className="lesson-time-rem">
-                <Clock size={14} /> {lastLesson.duration || '30 دقيقة'}
+                <Clock size={14} /> {lastLesson.duration || 'درس معتمد'}
               </span>
             )}
           </div>
@@ -136,7 +122,7 @@ export default function DashboardOverview() {
             </h3>
             <p className="dash-lesson-sub">
               {lastLesson
-                ? `المادة: ${lastLesson.subjectTitle || 'المادة الدراسية'}`
+                ? `المادة: ${lastLesson.subjectName || 'المادة الدراسية'}`
                 : 'اختر مادة دراسية وابدأ في تصفح دروسك المخصصة لمسارك'}
             </p>
 
@@ -208,23 +194,27 @@ export default function DashboardOverview() {
               ) : userSubjects.length === 0 ? (
                 <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>لا توجد مواد مسجلة لمسارك حتى الآن.</p>
               ) : (
-                userSubjects.slice(0, 3).map((sub) => (
-                  <div key={sub.id} className="subj-bar-item">
-                    <div className="subj-info">
-                      <span>{sub.title}</span>
-                      <span>{sub.progress || 0}%</span>
+                userSubjects.slice(0, 3).map((sub) => {
+                  const subProg = userProfile?.progress?.[sub.id] || 0;
+                  const subTitle = sub.name || sub.title;
+                  return (
+                    <div key={sub.id} className="subj-bar-item">
+                      <div className="subj-info">
+                        <span>{subTitle}</span>
+                        <span>{subProg}%</span>
+                      </div>
+                      <div className="subj-track">
+                        <div
+                          className="subj-fill"
+                          style={{
+                            width: `${subProg}%`,
+                            background: sub.color || 'var(--green-neon)',
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="subj-track">
-                      <div
-                        className="subj-fill"
-                        style={{
-                          width: `${sub.progress || 0}%`,
-                          background: sub.color || 'var(--green-neon)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
