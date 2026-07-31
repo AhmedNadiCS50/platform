@@ -16,9 +16,18 @@ import { createUserDocument } from './firestoreService';
  * Translates Firebase Auth and Firestore error codes into clean Arabic messages.
  */
 export function getArabicAuthErrorMessage(errorCode) {
-  if (typeof errorCode !== 'string') return 'حدث خطأ أثناء إجراء العملية. يرجى المحاولة مرة أخرى.';
+  if (!errorCode || typeof errorCode !== 'string') {
+    return 'حدث خطأ أثناء إجراء العملية. يرجى المحاولة مرة أخرى.';
+  }
 
-  switch (errorCode) {
+  const code = errorCode.toLowerCase();
+
+  // API Key missing or invalid (matches 'auth/api-key-not-valid...', 'auth/invalid-api-key')
+  if (code.includes('api-key') || code.includes('invalid-api-key')) {
+    return 'مفتاح Firebase API Key غير صالح أو غير معرف. يرجى إضافة VITE_FIREBASE_API_KEY في إعدادات Vercel (Environment Variables) أو ملف .env المحلي وإعادة تشغيل المشروع.';
+  }
+
+  switch (code) {
     case 'auth/invalid-email':
       return 'البريد الإلكتروني المدخل غير صالح.';
     case 'auth/user-disabled':
@@ -43,8 +52,6 @@ export function getArabicAuthErrorMessage(errorCode) {
       return 'تم تجاوز الحد المسموح للمحاولات. يرجى المحاولة لاحقاً.';
     case 'auth/operation-not-allowed':
       return 'تسجيل الدخول بالبريد الإلكتروني غير مفعّل في إعدادات Firebase Console (Email/Password Auth).';
-    case 'auth/invalid-api-key':
-      return 'مفتاح Firebase API Key غير صالح. يرجى مراجعة ملف .env.';
     case 'permission-denied':
       return 'لا تتوفر صلاحية كتابة في Firestore. يرجى التحقق من قواعد الأمان (Security Rules).';
     default:
@@ -56,7 +63,6 @@ export function getArabicAuthErrorMessage(errorCode) {
 /**
  * Register a new user with Email and Password.
  * Also creates a Firestore user document with basic profile data.
- * Safe against Firestore profile errors so Auth succeeds even if Firestore has a transient error.
  */
 export async function registerWithEmailPassword(email, password, displayName) {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -82,7 +88,6 @@ export async function registerWithEmailPassword(email, password, displayName) {
     });
   } catch (err) {
     console.error('[registerWithEmailPassword] Failed to create Firestore user doc:', err);
-    // Don't throw — user account IS created in Auth, so let them proceed to onboarding
   }
 
   // Send Email Verification
@@ -130,8 +135,6 @@ export async function logoutUser() {
 
 /**
  * Change password — re-authenticates with current password first, then updates.
- * @param {string} currentPassword - User's current password for re-auth
- * @param {string} newPassword - The new password to set
  */
 export async function updateUserPassword(currentPassword, newPassword) {
   const user = auth.currentUser;
