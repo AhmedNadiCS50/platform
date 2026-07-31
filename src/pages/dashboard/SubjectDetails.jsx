@@ -28,8 +28,8 @@ export default function SubjectDetails() {
     {
       unitTitle: 'الوحدة الثانية: التخصص والتعمق الأكاديمي',
       lessons: [
-        { id: 4, title: 'الدراسة التفصيلية للظواهر الحيوية', duration: '30 دقيقة', locked: true },
-        { id: 5, title: 'الاختبار النصف سنوي للمادة', duration: '60 دقيقة', locked: true },
+        { id: 4, title: 'الدراسة التفصيلية للظواهر الحيوية', duration: '30 دقيقة', completed: false, current: true },
+        { id: 5, title: 'الاختبار النصف سنوي الشامل', duration: '15 دقيقة', isQuiz: true, quizId: 'biology-quiz-1', current: true },
       ]
     }
   ];
@@ -80,6 +80,12 @@ export default function SubjectDetails() {
                   <div
                     key={lesson.id}
                     className={`lesson-row ${lesson.current ? 'is-current' : ''} ${lesson.locked ? 'is-locked' : ''}`}
+                    onClick={() => {
+                      if (lesson.locked) return;
+                      if (lesson.isQuiz) navigate(`/quiz/${lesson.quizId || 'biology-quiz-1'}`);
+                      else navigate(`/dashboard/lesson/${lesson.id}`);
+                    }}
+                    style={{ cursor: lesson.locked ? 'not-allowed' : 'pointer' }}
                   >
                     <div className="lesson-left">
                       {lesson.completed && <CheckCircle size={20} className="icon-done" />}

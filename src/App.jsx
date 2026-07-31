@@ -24,6 +24,10 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardOverview from './pages/dashboard/DashboardOverview';
 import SubjectsPage from './pages/dashboard/SubjectsPage';
 import SubjectDetails from './pages/dashboard/SubjectDetails';
+import LessonPage from './pages/dashboard/LessonPage';
+import QuizPage from './pages/dashboard/QuizPage';
+import ProfilePage from './pages/dashboard/ProfilePage';
+import SettingsPage from './pages/dashboard/SettingsPage';
 
 function HomePage({ onOpenModal }) {
   return (
@@ -91,17 +95,22 @@ export default function App() {
         <Route path="/select-grade" element={<SelectGrade />} />
         <Route path="/select-path" element={<SelectPath />} />
         <Route path="/select-specialization" element={<SelectSpecialization />} />
+        <Route path="/quiz/:id" element={<QuizPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
 
         {/* Dashboard Layout with Nested Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardOverview />} />
           <Route path="subjects" element={<SubjectsPage />} />
           <Route path="subjects/:id" element={<SubjectDetails />} />
-          <Route path="exams" element={<PlaceholderPage title="الاختبارات" />} />
+          <Route path="lesson/:id" element={<LessonPage />} />
+          <Route path="quiz/:id" element={<QuizPage />} />
+          <Route path="exams" element={<QuizPage />} />
           <Route path="progress" element={<PlaceholderPage title="التقدم" />} />
           <Route path="achievements" element={<PlaceholderPage title="الإنجازات" />} />
-          <Route path="profile" element={<PlaceholderPage title="الملف الشخصي" />} />
-          <Route path="settings" element={<PlaceholderPage title="الإعدادات" />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
 

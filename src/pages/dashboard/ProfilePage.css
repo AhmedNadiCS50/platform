@@ -1,0 +1,519 @@
+/* ==========================================================================
+   PROFILE PAGE  —  /dashboard/profile & /profile
+   ========================================================================== */
+
+.profile-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  direction: rtl;
+  font-family: var(--font-body-ar);
+}
+
+/* ── Hero Banner Card ────────────────────────────────────────────────────── */
+.profile-hero-card {
+  background: linear-gradient(135deg, rgba(16, 28, 21, 0.95) 0%, rgba(4, 8, 6, 0.95) 100%);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-luxury);
+  transition: var(--transition-smooth);
+}
+
+.profile-hero-card::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(0, 230, 118, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.profile-hero-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  z-index: 1;
+}
+
+.profile-user-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Avatar Circle */
+.profile-avatar-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--grad-green-neon);
+  padding: 3px;
+  box-shadow: 0 0 30px rgba(0, 230, 118, 0.3);
+  flex-shrink: 0;
+}
+
+.profile-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #0a120d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading-ar);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--green-neon);
+}
+
+.profile-avatar-edit-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--grad-green-neon);
+  border: 2px solid #040806;
+  color: #040806;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.profile-avatar-edit-btn:hover {
+  transform: scale(1.15);
+}
+
+.profile-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.profile-user-name {
+  font-family: var(--font-heading-ar);
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--white-pure);
+  line-height: 1.2;
+}
+
+.profile-pro-badge {
+  font-family: var(--font-brand-en);
+  font-size: 0.72rem;
+  font-weight: 900;
+  background: var(--grad-green-neon);
+  color: #040806;
+  padding: 0.2rem 0.65rem;
+  border-radius: 6px;
+}
+
+.profile-user-email {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.profile-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-btn-settings {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 230, 118, 0.1);
+  border: 1.5px solid var(--border-active);
+  color: var(--green-neon);
+  font-family: var(--font-heading-ar);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-decoration: none;
+}
+
+.profile-btn-settings:hover {
+  background: rgba(0, 230, 118, 0.2);
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.25);
+  transform: translateY(-2px);
+}
+
+.profile-btn-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--white-pure);
+  font-family: var(--font-heading-ar);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.profile-btn-edit:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Academic Info Quick Grid */
+.profile-academic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 1;
+}
+
+.academic-info-card {
+  background: rgba(10, 18, 13, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.academic-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 230, 118, 0.12);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  color: var(--green-neon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.academic-label {
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+  display: block;
+}
+
+.academic-value {
+  font-family: var(--font-heading-ar);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--white-pure);
+}
+
+/* ── Metrics Stats Cards ─────────────────────────────────────────────────── */
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem;
+}
+
+.profile-stat-card {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  transition: var(--transition-smooth);
+}
+
+.profile-stat-card:hover {
+  border-color: var(--border-active);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.stat-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon-wrap.green { background: rgba(0, 230, 118, 0.12); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+.stat-icon-wrap.blue { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.stat-icon-wrap.amber { background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+.stat-icon-wrap.purple { background: rgba(192, 132, 252, 0.12); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
+
+.stat-val-num {
+  font-family: var(--font-heading-ar);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--white-pure);
+  display: block;
+  line-height: 1.1;
+}
+
+.stat-val-lbl {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+/* ── Achievements Section ────────────────────────────────────────────────── */
+.profile-section-card {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profile-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-section-title {
+  font-family: var(--font-heading-ar);
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--white-pure);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.profile-section-title svg {
+  color: var(--green-neon);
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+}
+
+.achievement-card {
+  background: rgba(10, 18, 13, 0.6);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 1.3rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: var(--transition-smooth);
+}
+
+.achievement-card.unlocked {
+  border-color: rgba(0, 230, 118, 0.35);
+  background: rgba(0, 230, 118, 0.05);
+}
+
+.achievement-card.unlocked:hover {
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.15);
+  transform: translateY(-2px);
+}
+
+.achievement-card.locked {
+  opacity: 0.55;
+  filter: grayscale(0.8);
+}
+
+.achievement-badge-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.4rem;
+}
+
+.achievement-card.unlocked .achievement-badge-icon {
+  background: rgba(0, 230, 118, 0.15);
+  border: 1.5px solid var(--green-neon);
+}
+
+.achievement-card.locked .achievement-badge-icon {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+}
+
+.achievement-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.achievement-name {
+  font-family: var(--font-heading-ar);
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--white-pure);
+}
+
+.achievement-desc {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.achievement-date {
+  font-size: 0.75rem;
+  color: var(--green-neon);
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+/* ── Settings Shortcut Section ───────────────────────────────────────────── */
+.settings-shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
+}
+
+.settings-shortcut-card {
+  background: rgba(10, 18, 13, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-decoration: none;
+  transition: var(--transition-smooth);
+}
+
+.settings-shortcut-card:hover {
+  border-color: var(--border-active);
+  background: rgba(0, 230, 118, 0.06);
+  transform: translateX(-4px);
+}
+
+.shortcut-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.shortcut-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.shortcut-info-title {
+  font-family: var(--font-heading-ar);
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--white-pure);
+  display: block;
+}
+
+.shortcut-info-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.shortcut-arrow {
+  color: var(--text-subtle);
+  transition: transform 0.2s;
+}
+
+.settings-shortcut-card:hover .shortcut-arrow {
+  color: var(--green-neon);
+  transform: translateX(-4px);
+}
+
+/* ── Responsive Profile ──────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .profile-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .achievements-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-academic-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-hero-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-hero-actions {
+    width: 100%;
+  }
+
+  .profile-btn-settings,
+  .profile-btn-edit {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 580px) {
+  .profile-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-user-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
