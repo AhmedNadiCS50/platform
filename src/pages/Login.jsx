@@ -31,7 +31,8 @@ export default function Login() {
       await loginWithEmailPassword(form.email, form.password);
       navigate('/dashboard');
     } catch (error) {
-      const arabicMsg = getArabicAuthErrorMessage(error.code);
+      console.error('[Login] Auth error:', error);
+      const arabicMsg = getArabicAuthErrorMessage(error?.code);
       setErrorMessage(arabicMsg);
     } finally {
       setLoading(false);

@@ -54,7 +54,8 @@ export default function Register() {
       await registerWithEmailPassword(form.email, form.password, form.fullName);
       navigate('/select-grade');
     } catch (error) {
-      const arabicMsg = getArabicAuthErrorMessage(error.code);
+      console.error('[Register] Registration error:', error);
+      const arabicMsg = getArabicAuthErrorMessage(error?.code);
       setErrorMessage(arabicMsg);
     } finally {
       setLoading(false);

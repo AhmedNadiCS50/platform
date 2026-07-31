@@ -13,9 +13,11 @@ import { auth } from '../config/firebase';
 import { createUserDocument } from './firestoreService';
 
 /**
- * Translates Firebase Auth error codes into clean Arabic messages.
+ * Translates Firebase Auth and Firestore error codes into clean Arabic messages.
  */
 export function getArabicAuthErrorMessage(errorCode) {
+  if (typeof errorCode !== 'string') return 'حدث خطأ أثناء إجراء العملية. يرجى المحاولة مرة أخرى.';
+
   switch (errorCode) {
     case 'auth/invalid-email':
       return 'البريد الإلكتروني المدخل غير صالح.';
@@ -28,7 +30,7 @@ export function getArabicAuthErrorMessage(errorCode) {
     case 'auth/invalid-credential':
       return 'بيانات الدخول غير صحيحة. يرجى التأكد من البريد وكلمة المرور.';
     case 'auth/email-already-in-use':
-      return 'البريد الإلكتروني مستخدم بالفعل بحساب آخر.';
+      return 'البريد الإلكتروني مستخدم بالفعل بحساب آخر. حاول تسجيل الدخول بدلاً من إنشاء حساب جديد.';
     case 'auth/weak-password':
       return 'كلمة المرور ضعيفة جداً. يجب أن تحتوي على 6 أحرف على الأقل.';
     case 'auth/too-many-requests':
@@ -39,7 +41,14 @@ export function getArabicAuthErrorMessage(errorCode) {
       return 'يتطلب هذا الإجراء إعادة تسجيل الدخول لأسباب أمنية.';
     case 'auth/quota-exceeded':
       return 'تم تجاوز الحد المسموح للمحاولات. يرجى المحاولة لاحقاً.';
+    case 'auth/operation-not-allowed':
+      return 'تسجيل الدخول بالبريد الإلكتروني غير مفعّل في إعدادات Firebase Console (Email/Password Auth).';
+    case 'auth/invalid-api-key':
+      return 'مفتاح Firebase API Key غير صالح. يرجى مراجعة ملف .env.';
+    case 'permission-denied':
+      return 'لا تتوفر صلاحية كتابة في Firestore. يرجى التحقق من قواعد الأمان (Security Rules).';
     default:
+      console.error('[authService] Unhandled error code:', errorCode);
       return 'حدث خطأ أثناء إجراء العملية. يرجى المحاولة مرة أخرى.';
   }
 }
@@ -47,7 +56,7 @@ export function getArabicAuthErrorMessage(errorCode) {
 /**
  * Register a new user with Email and Password.
  * Also creates a Firestore user document with basic profile data.
- * Grade, path, and specialization are saved separately during onboarding.
+ * Safe against Firestore profile errors so Auth succeeds even if Firestore has a transient error.
  */
 export async function registerWithEmailPassword(email, password, displayName) {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -55,23 +64,32 @@ export async function registerWithEmailPassword(email, password, displayName) {
 
   // Update Firebase Auth profile with display name
   if (displayName) {
-    await updateProfile(user, { displayName });
+    try {
+      await updateProfile(user, { displayName });
+    } catch (err) {
+      console.warn('[registerWithEmailPassword] Failed to update displayName:', err);
+    }
   }
 
   // Create initial Firestore user document
-  await createUserDocument(user.uid, {
-    fullName: displayName || '',
-    email: user.email,
-    grade: null,
-    path: null,
-    specialization: null,
-  });
+  try {
+    await createUserDocument(user.uid, {
+      fullName: displayName || '',
+      email: user.email,
+      grade: null,
+      path: null,
+      specialization: null,
+    });
+  } catch (err) {
+    console.error('[registerWithEmailPassword] Failed to create Firestore user doc:', err);
+    // Don't throw — user account IS created in Auth, so let them proceed to onboarding
+  }
 
   // Send Email Verification
   try {
     await sendEmailVerification(user);
   } catch (error) {
-    console.warn('Could not send verification email immediately:', error);
+    console.warn('[registerWithEmailPassword] Could not send verification email:', error);
   }
 
   return user;
